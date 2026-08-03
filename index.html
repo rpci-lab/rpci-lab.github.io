@@ -1,0 +1,467 @@
+<title>RPCI Lab — Nifty 500 Daily Screen</title>
+<style>
+:root{
+  --ink:#f2f4f8; --ground:#0b1017; --panel:#121a26; --panel-2:#0f1622; --line:#1e2a3a;
+  --dim:#7d8da4; --dimmer:#55637a;
+  --gold:#e3a72f; --gold-soft:#4a3512;
+  --pass:#3fa08b; --fail:#c05a4e; --pass-bg:#16342e; --fail-bg:#3a1f1c;
+  --up:#3fa08b; --down:#c05a4e;
+  --mono:ui-monospace,"SFMono-Regular","Cascadia Mono",Consolas,"Liberation Mono",monospace;
+  --sans:ui-sans-serif,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:light){
+  :root{
+    --ink:#101725; --ground:#f6f7f9; --panel:#ffffff; --panel-2:#eef1f5; --line:#dde2ea;
+    --dim:#5d6b81; --dimmer:#8b98ab;
+    --gold:#a9761a; --gold-soft:#f6e7c4;
+    --pass:#2b7d6a; --fail:#a8453a; --pass-bg:#dcefe9; --fail-bg:#f8e2df;
+    --up:#2b7d6a; --down:#a8453a;
+  }
+}
+:root[data-theme="dark"]{
+  --ink:#f2f4f8; --ground:#0b1017; --panel:#121a26; --panel-2:#0f1622; --line:#1e2a3a;
+  --dim:#7d8da4; --dimmer:#55637a; --gold:#e3a72f; --gold-soft:#4a3512;
+  --pass:#3fa08b; --fail:#c05a4e; --pass-bg:#16342e; --fail-bg:#3a1f1c;
+  --up:#3fa08b; --down:#c05a4e;
+}
+:root[data-theme="light"]{
+  --ink:#101725; --ground:#f6f7f9; --panel:#ffffff; --panel-2:#eef1f5; --line:#dde2ea;
+  --dim:#5d6b81; --dimmer:#8b98ab; --gold:#a9761a; --gold-soft:#f6e7c4;
+  --pass:#2b7d6a; --fail:#a8453a; --pass-bg:#dcefe9; --fail-bg:#f8e2df;
+  --up:#2b7d6a; --down:#a8453a;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);
+  font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1500px;margin:0 auto;padding:0 20px 80px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.lbl{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim)}
+
+/* ── masthead ─────────────────────────────── */
+header{border-bottom:1px solid var(--line);margin-bottom:22px;padding:26px 0 18px;
+  display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end;justify-content:space-between}
+h1{font-family:var(--mono);font-size:clamp(19px,3.4vw,27px);font-weight:600;letter-spacing:-.02em;
+  margin:0;text-wrap:balance}
+h1 em{font-style:normal;color:var(--gold)}
+.sub{margin:5px 0 0;color:var(--dim);font-size:13px}
+.stamp{text-align:right;flex-shrink:0}
+.stamp .big{font-family:var(--mono);font-size:20px;font-weight:600}
+button,select,input{font:inherit;color:inherit}
+.themebtn{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:6px;
+  padding:6px 11px;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.08em}
+.themebtn:hover{border-color:var(--gold);color:var(--gold)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+
+/* ── panels ───────────────────────────────── */
+.grid{display:grid;gap:14px;margin-bottom:14px}
+.g3{grid-template-columns:1.5fr 1fr 1fr}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:15px 17px}
+.panel h2{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);margin:0 0 13px;font-weight:500}
+
+/* breadth bar */
+.breadth{display:flex;height:34px;border-radius:5px;overflow:hidden;margin-bottom:9px}
+.breadth div{position:relative;transition:filter .15s}
+.breadth div:hover{filter:brightness(1.35)}
+.bkey{display:flex;flex-wrap:wrap;gap:13px}
+.bkey span{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--dim);font-family:var(--mono)}
+.dot{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.statrow{display:flex;gap:26px;margin-top:13px;padding-top:13px;border-top:1px solid var(--line)}
+.stat .v{font-family:var(--mono);font-size:23px;font-weight:600;line-height:1.1}
+.stat .v.gold{color:var(--gold)}
+
+/* movers */
+.mv{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:5px 0;
+  border-bottom:1px solid var(--line);font-size:13px}
+.mv:last-child{border-bottom:none}
+.mv b{font-family:var(--mono);font-weight:600;font-size:12.5px}
+.mv .d{font-family:var(--mono);font-size:11.5px;font-weight:600}
+.up{color:var(--up)}.down{color:var(--down)}
+.muted{color:var(--dimmer);font-size:12px;font-style:italic}
+
+/* condition pass rates */
+.crate{display:flex;align-items:center;gap:9px;margin-bottom:5px;font-size:12px}
+.crate .nm{width:74px;flex-shrink:0;font-family:var(--mono);font-size:10.5px;color:var(--dim);
+  letter-spacing:.05em;cursor:help}
+.crate .bar{flex:1;height:7px;background:var(--panel-2);border-radius:4px;overflow:hidden}
+.crate .bar i{display:block;height:100%;background:var(--gold);border-radius:4px}
+.crate .pc{width:34px;text-align:right;font-family:var(--mono);font-size:11px;color:var(--dim)}
+
+/* sectors */
+.sect{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:7px}
+.stile{background:var(--panel-2);border:1px solid transparent;border-radius:7px;padding:9px 10px;
+  cursor:pointer;text-align:left;transition:border-color .12s}
+.stile:hover{border-color:var(--gold)}
+.stile[aria-pressed="true"]{border-color:var(--gold);background:var(--gold-soft)}
+.stile .sn{font-size:11px;color:var(--dim);display:block;line-height:1.3;margin-bottom:4px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stile .sv{font-family:var(--mono);font-size:16px;font-weight:600}
+.stile .sc{font-family:var(--mono);font-size:10px;color:var(--dimmer)}
+
+/* ── toolbar ──────────────────────────────── */
+.tools{position:sticky;top:0;z-index:20;background:var(--ground);padding:12px 0;
+  border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+#q{background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:8px 12px;
+  min-width:210px;flex:1;max-width:330px;font-family:var(--mono);font-size:13px}
+#q::placeholder{color:var(--dimmer)}
+#secsel{background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:6px 11px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.05em;color:var(--dim);cursor:pointer;
+  max-width:210px}
+#secsel:hover{border-color:var(--gold);color:var(--ink)}
+#secsel.on{background:var(--gold);border-color:var(--gold);color:#0b1017;font-weight:600}
+.chip{background:var(--panel);border:1px solid var(--line);color:var(--dim);border-radius:20px;
+  padding:6px 13px;cursor:pointer;font-family:var(--mono);font-size:11px;letter-spacing:.05em;
+  white-space:nowrap;transition:all .12s}
+.chip:hover{border-color:var(--gold);color:var(--ink)}
+.chip[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#0b1017;font-weight:600}
+.spacer{flex:1}
+.count{font-family:var(--mono);font-size:11.5px;color:var(--dim);white-space:nowrap}
+
+/* ── matrix table ─────────────────────────── */
+.tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  margin-top:14px}
+table{border-collapse:collapse;width:100%;font-size:13px}
+thead th{position:sticky;top:0;background:var(--panel-2);z-index:5;font-family:var(--mono);
+  font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);font-weight:500;
+  padding:9px 7px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--line);
+  cursor:pointer;user-select:none}
+thead th:hover{color:var(--gold)}
+thead th.cx{text-align:center;padding:9px 0;width:26px;font-size:9px;letter-spacing:.02em}
+thead th.cx.on{color:var(--gold);background:var(--gold-soft)}
+tbody tr{border-bottom:1px solid var(--line)}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:var(--panel-2)}
+td{padding:7px;white-space:nowrap}
+td.sym a{color:var(--ink);text-decoration:none;font-family:var(--mono);font-weight:600;font-size:12.5px}
+td.sym a:hover{color:var(--gold);text-decoration:underline}
+td.nm{color:var(--dim);font-size:12px;max-width:190px;overflow:hidden;text-overflow:ellipsis}
+td.num{font-family:var(--mono);text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px}
+.score{font-family:var(--mono);font-weight:700;font-size:13px;display:inline-block;min-width:38px;
+  text-align:center;padding:3px 6px;border-radius:5px}
+.delta{font-family:var(--mono);font-size:11px;font-weight:600}
+/* the matrix cell — the page's signature element */
+td.cx{padding:0;text-align:center;width:26px}
+td.cx i{display:inline-block;width:15px;height:15px;border-radius:3px;font-style:normal;
+  cursor:help;vertical-align:middle}
+td.cx i.p{background:var(--pass-bg);border:1px solid var(--pass)}
+td.cx i.f{background:var(--fail-bg);border:1px solid var(--fail);opacity:.55}
+td.cx.on{background:var(--gold-soft)}
+.matdiv{border-left:1px solid var(--line)}
+
+/* condition legend */
+.legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:2px 20px}
+.lg{display:flex;gap:9px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line)}
+.lg .code{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;
+  color:var(--gold);width:30px;flex-shrink:0}
+.lg .txt{flex:1;min-width:0}
+.lg .full{font-size:12.5px;display:block;line-height:1.35}
+.lg .pass{font-family:var(--mono);font-size:10.5px;color:var(--dim);display:block;margin-top:1px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lg .pass b{color:var(--pass);font-weight:600}
+.lg .rt{font-family:var(--mono);font-size:10.5px;color:var(--dimmer);flex-shrink:0}
+
+.empty{padding:44px;text-align:center;color:var(--dim)}
+footer{margin-top:26px;padding-top:16px;border-top:1px solid var(--line);color:var(--dimmer);
+  font-size:11.5px;line-height:1.7}
+footer b{color:var(--dim);font-weight:600}
+
+@media (max-width:1080px){ .g3{grid-template-columns:1fr} }
+@media (max-width:640px){
+  .wrap{padding:0 12px 60px}
+  td.nm,th.nm,td.vol,th.vol{display:none}
+  .statrow{gap:16px}
+  header{padding:18px 0 14px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>RPCI <em>Lab</em> — Nifty 500 Daily Screen</h1>
+    <p class="sub">Every stock scored 0–11 on the RPCI conditions. Scan a column to see what the market is failing.</p>
+  </div>
+  <div class="stamp">
+    <div class="lbl">Session</div>
+    <div class="big" id="dstamp"></div>
+    <button class="themebtn" id="tt" style="margin-top:7px">THEME</button>
+  </div>
+</header>
+
+<div class="grid g3">
+  <div class="panel">
+    <h2>Score Distribution</h2>
+    <div class="breadth" id="breadth"></div>
+    <div class="bkey" id="bkey"></div>
+    <div class="statrow">
+      <div class="stat"><div class="lbl">Scanned</div><div class="v" id="s-n"></div></div>
+      <div class="stat"><div class="lbl">Score 9+</div><div class="v gold" id="s-elite"></div></div>
+      <div class="stat"><div class="lbl">Median</div><div class="v" id="s-med"></div></div>
+      <div class="stat"><div class="lbl">Avg</div><div class="v" id="s-avg"></div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Biggest Moves <span style="color:var(--dimmer);letter-spacing:0" id="vsdate"></span></h2>
+    <div id="movers"></div>
+  </div>
+
+  <div class="panel">
+    <h2>Condition Pass Rate</h2>
+    <div id="crates"></div>
+  </div>
+</div>
+
+<div class="panel" style="margin-bottom:14px">
+  <h2>Sector Strength <span style="color:var(--dimmer);letter-spacing:0">— mean score, click to filter</span></h2>
+  <div class="sect" id="sectors"></div>
+</div>
+
+<div class="panel" style="margin-bottom:14px">
+  <h2>The Eleven Conditions <span style="color:var(--dimmer);letter-spacing:0">— what each column means</span></h2>
+  <div class="legend" id="legend"></div>
+</div>
+
+<div class="tools">
+  <input id="q" placeholder="Search symbol or company…" autocomplete="off">
+  <select id="secsel" aria-label="Filter by sector"><option value="">ALL SECTORS</option></select>
+  <button class="chip" data-band="all" aria-pressed="true">ALL</button>
+  <button class="chip" data-band="9">9–11</button>
+  <button class="chip" data-band="7">7–8</button>
+  <button class="chip" data-band="5">5–6</button>
+  <button class="chip" data-band="0">&lt;5</button>
+  <button class="chip" data-near="1" title="Failing only one condition — one flip from a 10+">NEAR MISS</button>
+  <button class="chip" data-up="1" title="Score improved since the previous session">UPGRADED</button>
+  <span class="spacer"></span>
+  <span class="count" id="count"></span>
+  <button class="chip" id="csv">EXPORT CSV</button>
+</div>
+
+<div class="tblwrap">
+  <table>
+    <thead><tr id="head"></tr></thead>
+    <tbody id="body"></tbody>
+  </table>
+  <div class="empty" id="empty" hidden>No stocks match those filters.</div>
+</div>
+
+<footer>
+  <b>How to read this.</b> Each row is one stock; the eleven cells are the RPCI conditions in order —
+  a filled cell passed, a faded cell failed. Reading <em>down</em> a column shows how much of the market
+  clears that condition today; reading <em>across</em> shows a single stock's shape.
+  Click a condition header to keep only stocks that pass it. Click any symbol to open its TradingView chart.<br>
+  <b>Source.</b> Scores read directly from the “RPCI + Rohan Momentum Indicator” by
+  rohan_investor98 on daily candles, one stock at a time. Universe: NSE Nifty 500.
+  <span id="failnote"></span><br>
+  <b>Not investment advice.</b> An automated screen of a third-party indicator, published for study.
+  Verify independently before risking money.
+</footer>
+</div>
+
+<script>
+const D={"d":"2026-08-03","p":"2026-07-30","f":1,"t":["Undervalued","Strong","Very Strong momentum","YES","0","NO","Stage 2 - Uptrend","Uptrend","Bajaj Auto Ltd.","Automobile and Auto Components","Strongly favourable","Reasonably valued","1","Not Confirmed","Coforge Ltd.","Information Technology","Strong momentum","CreditAccess Grameen Ltd.","Financial Services","Eicher Motors Ltd.","Weak momentum","Godrej Industries Ltd.","Diversified","Weak","Karur Vysya Bank Ltd.","Ajanta Pharmaceuticals Ltd.","Healthcare","Overvalued","Anand Rathi Wealth Ltd.","Balkrishna Industries Ltd.","Cholamandalam Investment and Finance Company Ltd.","Federal Bank Ltd.","Kalyan Jewellers India Ltd.","Consumer Durables","Laurus Labs Ltd.","Lodha Developers Ltd.","Realty","Mangalore Refinery & Petrochemicals Ltd.","Oil Gas & Consumable Fuels","Nestle India Ltd.","Fast Moving Consumer Goods","FSN E-Commerce Ventures Ltd.","Consumer Services","Redington Ltd.","Services","R R Kabel Ltd.","Capital Goods","Saregama India Ltd","Media Entertainment & Publication","Sun Pharmaceutical Industries Ltd.","Sun TV Network Ltd.","Tech Mahindra Ltd.","Titan Company Ltd.","Aditya Birla Capital Ltd.","Favourable","Action Construction Equipment Ltd.","Adani Energy Solutions Ltd.","Power","Apollo Hospitals Enterprise Ltd.","Atul Ltd.","Chemicals","Bajaj Finserv Ltd.","Bajaj Finance Ltd.","Balrampur Chini Mills Ltd.","Bharat Forge Ltd.","Bharat Heavy Electricals Ltd.","Capri Global Capital Ltd.","Chennai Petroleum Corporation Ltd.","Craftsman Automation Ltd.","Divi's Laboratories Ltd.","Exide Industries Ltd.","Firstsource Solutions Ltd.","Gland Pharma Ltd.","Glaxosmithkline Pharmaceuticals Ltd.","Glenmark Pharmaceuticals Ltd.","Godrej Properties Ltd.","Granules India Ltd.","Hindustan Aeronautics Ltd.","H.E.G. Ltd.","Himadri Speciality Chemical Ltd.","ICICI Bank Ltd.","Downtrend","IDFC First Bank Ltd.","IIFL Finance Ltd.","Ipca Laboratories Ltd.","Jubilant Ingrevia Ltd.","Kajaria Ceramics Ltd.","Lloyds Metals And Energy Ltd.","Metals & Mining","L&T Finance Ltd.","Lupin Ltd.","Mahindra & Mahindra Financial Services Ltd.","Manappuram Finance Ltd.","Samvardhana Motherson International Ltd.","Nippon Life India Asset Management Ltd.","Info Edge (India) Ltd.","Oberoi Realty Ltd.","Oracle Financial Services Software Ltd.","One 97 Communications Ltd.","Radico Khaitan Ltd","Rainbow Childrens Medicare Ltd.","RBL Bank Ltd.","Shyam Metalics and Energy Ltd.","Sona BLW Precision Forgings Ltd.","TVS Motor Company Ltd.","Wockhardt Ltd.","3M India Ltd.","Aarti Industries Ltd.","ABB India Ltd.","Anant Raj Ltd.","Apar Industries Ltd.","Ashok Leyland Ltd.","Aster DM Quality Care Ltd.","AU Small Finance Bank Ltd.","Aurobindo Pharma Ltd.","Bharti Airtel Ltd.","Telecommunication","Biocon Ltd.","Bosch Ltd.","Computer Age Management Services Ltd.","Cipla Ltd.","Deepak Fertilisers & Petrochemicals Corp. Ltd.","Stage 4 - Downtrend","eClerx Services Ltd.","Emcure Pharmaceuticals Ltd.","Eternal Ltd.","Gabriel India Ltd.","Great Eastern Shipping Co. Ltd.","Garden Reach Shipbuilders & Engineers Ltd.","Hero MotoCorp Ltd.","Jindal Saw Ltd.","JSW Steel Ltd.","Dr. Lal Path Labs Ltd.","Mahindra & Mahindra Ltd.","C.E. Info Systems Ltd.","Marico Ltd.","Minda Corporation Ltd.","Niva Bupa Health Insurance Company Ltd.","Oil India Ltd.","Paradeep Phosphates Ltd.","Persistent Systems Ltd.","Petronet LNG Ltd.","Power Finance Corporation Ltd.","Prime Focus Ltd.","Poonawalla Fincorp Ltd.","PVR INOX Ltd.","REC Ltd.","Ramkrishna Forgings Ltd.","Sai Life Sciences Ltd.","Shriram Finance Ltd.","Siemens Ltd.","Solar Industries India Ltd.","Sonata Software Ltd.","Star Health and Allied Insurance Company Ltd.","Sumitomo Chemical India Ltd.","Tata Capital Ltd.","Torrent Pharmaceuticals Ltd.","United Spirits Ltd.","Usha Martin Ltd.","Vedanta Ltd.","Vijaya Diagnostic Centre Ltd.","Welspun Corp Ltd.","Zydus Lifesciences Ltd.","360 ONE WAM Ltd.","Wait on","Aditya Birla Sun Life AMC Ltd.","ACME Solar Holdings Ltd.","Adani Enterprises Ltd.","Adani Power Ltd.","Aegis Logistics Ltd.","Aegis Vopak Terminals Ltd.","AIA Engineering Ltd.","Authum Investment & Infrastructure Ltd.","Alkem Laboratories Ltd.","Angel One Ltd.","Anthem Biosciences Ltd.","Amara Raja Energy & Mobility Ltd.","N/A","Ather Energy Ltd.","Axis Bank Ltd.","Bajaj Holdings & Investment Ltd.","Belrise Industries Ltd.","Berger Paints India Ltd.","Caplin Point Laboratories Ltd.","CCL Products (I) Ltd.","Cemindia Projects Ltd.","Construction","Choice International Ltd.","Container Corporation of India Ltd.","Concord Biotech Ltd.","CRISIL Ltd.","City Union Bank Ltd.","Deepak Nitrite Ltd.","Dixon Technologies (India) Ltd.","Elgi Equipments Ltd.","Endurance Technologies Ltd.","Engineers India Ltd.","Finolex Cables Ltd.","Five-Star Business Finance Ltd.","Gujarat Fluorochemicals Ltd.","GAIL (India) Ltd.","Grasim Industries Ltd.","Construction Materials","Havells India Ltd.","HCL Technologies Ltd.","Hindalco Industries Ltd.","Hindustan Zinc Ltd.","Home First Finance Company India Ltd.","Honasa Consumer Ltd.","Vodafone Idea Ltd.","International Gemological Institute Ltd.","Inventurus Knowledge Solutions Ltd.","Indian Hotels Co. Ltd.","Indian Bank","Jammu & Kashmir Bank Ltd.","Jaiprakash Power Ventures Ltd.","Krishna Institute of Medical Sciences Ltd.","Lemon Tree Hotels Ltd.","Lenskart Solutions Ltd.","Life Insurance Corporation of India","LT Foods Ltd.","L&T Technology Services Ltd.","Bank of Maharashtra","Maruti Suzuki India Ltd.","Multi Commodity Exchange of India Ltd.","Muthoot Finance Ltd.","National Aluminium Co. Ltd.","Navin Fluorine International Ltd.","Netweb Technologies India Ltd.","Neuland Laboratories Ltd.","Newgen Software Technologies Ltd.","The New India Assurance Company Ltd.","NLC India Ltd.","NMDC Ltd.","Nuvama Wealth Management Ltd.","Nuvoco Vistas Corporation Ltd.","PCBL Chemical Ltd.","Pfizer Ltd.","PG Electroplast Ltd.","Pidilite Industries Ltd.","Punjab National Bank","PNB Housing Finance Ltd.","Polycab India Ltd.","Piramal Pharma Ltd.","PTC Industries Ltd.","Steel Authority of India Ltd.","SRF Ltd.","Transformers And Rectifiers (India) Ltd.","Tata Power Co. Ltd.","Tata Technologies Ltd.","Leela Palaces Hotels & Resorts Ltd.","Torrent Power Ltd.","UltraTech Cement Ltd.","Union Bank of India","Yes Bank Ltd.","Aadhar Housing Finance Ltd.","Aavas Financiers Ltd.","Abbott India Ltd.","Acutaas Chemicals Ltd.","Adani Green Energy Ltd.","Adani Ports and Special Economic Zone Ltd.","Adani Total Gas Ltd.","Bandhan Bank Ltd.","Bank of India","Bayer Cropscience Ltd.","Blue Dart Express Ltd.","Blue Jet Healthcare Ltd.","Bharat Petroleum Corporation Ltd.","Brigade Enterprises Ltd.","BSE Ltd.","Can Fin Homes Ltd.","Carborundum Universal Ltd.","Cartrade Tech Ltd.","CESC Ltd.","CIE Automotive India Ltd.","Coal India Ltd.","Coromandel International Ltd.","Cummins India Ltd.","Dalmia Bharat Ltd.","Data Patterns (India) Ltd.","Delhivery Ltd.","DLF Ltd.","Escorts Kubota Ltd.","Force Motors Ltd.","General Insurance Corporation of India","Gujarat Mineral Development Corporation Ltd.","GMR Airports Ltd.","GE Vernova T&D India Ltd.","HDB Financial Services Ltd.","Housing & Urban Development Corporation Ltd.","Hyundai Motor India Ltd.","ICICI Prudential Life Insurance Company Ltd.","Indian Energy Exchange Ltd.","IFCI Ltd.","InterGlobe Aviation Ltd.","IndusInd Bank Ltd.","Indian Overseas Bank","ITC Hotels Ltd.","Jio Financial Services Ltd.","JM Financial Ltd.","Jindal Stainless Ltd.","JSW Dulux Ltd.","JSW Energy Ltd.","JSW Infrastructure Ltd.","Kaynes Technology India Ltd.","Kfin Technologies Ltd.","Kirloskar Oil Eng Ltd.","Kalpataru Projects International Ltd.","K.P.R. Mill Ltd.","Textiles","Linde India Ltd.","LTM Ltd.","Global Health Ltd.","MMTC Ltd.","MRF Ltd.","NATCO Pharma Ltd.","Narayana Hrudayalaya Ltd.","NTPC Green Energy Ltd.","Olectra Greentech Ltd.","Oil & Natural Gas Corporation Ltd.","PI Industries Ltd.","Piramal Finance Ltd.","Power Grid Corporation of India Ltd.","Hitachi Energy India Ltd.","Premier Energies Ltd.","Prestige Estates Projects Ltd.","Sagility Ltd.","Sammaan Capital Ltd.","Sarda Energy and Minerals Ltd.","SBFC Finance Ltd.","SBI Cards and Payment Services Ltd.","State Bank of India","Schneider Electric Infrastructure Ltd.","Shipping Corporation of India Ltd.","Signatureglobal (India) Ltd.","Sundaram Finance Ltd.","Syrma SGS Technology Ltd.","Tata Steel Ltd.","TBO Tek Ltd.","Tata Consultancy Services Ltd.","Timken India Ltd.","Tata Motors Passenger Vehicles Ltd.","Travel Food Services Ltd.","Triveni Turbine Ltd.","UNO Minda Ltd.","UPL Ltd.","Varun Beverages Ltd.","Vardhman Textiles Ltd.","Wipro Ltd.","Zee Entertainment Enterprises Ltd.","2","Zensar Technolgies Ltd.","Zen Technologies Ltd.","ZF Commercial Vehicle Control Systems India Ltd.","Zydus Wellness Ltd.","ACC Ltd.","Affle 3i Ltd.","Amber Enterprises India Ltd.","Ambuja Cements Ltd.","Apollo Tyres Ltd.","Aptus Value Housing Finance India Ltd.","Asian Paints Ltd.","Astral Ltd.","AWL Agri Business Ltd.","Bank of Baroda","Bombay Burmah Trading Corporation Ltd.","Bharat Dynamics Ltd.","Bharat Electronics Ltd.","Bharti Hexacom Ltd.","Britannia Industries Ltd.","Birlasoft Ltd.","Canara Bank","Sideways","Canara HSBC Life Insurance Company Ltd.","Castrol India Ltd.","Central Depository Services (India) Ltd.","Ceat Ltd.","Central Bank of India","CG Power and Industrial Solutions Ltd.","Chalet Hotels Ltd.","Chambal Fertilizers & Chemicals Ltd.","Clean Science and Technology Ltd.","Cohance Lifesciences Ltd.","Colgate Palmolive (India) Ltd.","Aditya Infotech Ltd.","DCM Shriram Ltd.","Avenue Supermarts Ltd.","Dr. Reddy's Laboratories Ltd.","E.I.D. Parry (India) Ltd.","Elecon Engineering Co. Ltd.","Emami Ltd.","Fortis Healthcare Ltd.","Graphite India Ltd.","Gravita India Ltd.","Billionbrains Garage Ventures Ltd.","HBL Engineering Ltd.","HDFC Bank Ltd.","Hexaware Technologies Ltd.","HFCL Ltd.","Hindustan Copper Ltd.","Hindustan Petroleum Corporation Ltd.","Honeywell Automation India Ltd.","IDBI Bank Ltd.","Indraprastha Gas Ltd.","Indegene Ltd.","Indus Towers Ltd.","Infosys Ltd.","Indian Oil Corporation Ltd.","IRCON International Ltd.","Indian Renewable Energy Development Agency Ltd.","ITC Ltd.","Jindal Steel Ltd.","JK Tyre & Industries Ltd.","JSW Cement Ltd.","Jubilant Foodworks Ltd.","Jyoti CNC Automation Ltd.","KEI Industries Ltd.","Kotak Mahindra Bank Ltd.","KPIT Technologies Ltd.","Latent View Analytics Ltd.","Larsen & Toubro Ltd.","Mankind Pharma Ltd.","Max Healthcare Institute Ltd.","Mahanagar Gas Ltd.","MphasiS Ltd.","Motherson Sumi Wiring India Ltd.","Nava Ltd.","NBCC (India) Ltd.","NHPC Ltd.","NMDC Steel Ltd.","NTPC Ltd.","Onesource Specialty Pharma Ltd.","Phoenix Mills Ltd.","PB Fintech Ltd.","The Ramco Cements Ltd.","Reliance Industries Ltd.","RITES Ltd.","SBI Life Insurance Company Ltd.","Shree Cement Ltd.","SJVN Ltd.","Supreme Petrochem Ltd.","Supreme Industries Ltd.","Swan Corp Ltd.","Swiggy Ltd.","Tata Communications Ltd.","Tata Consumer Products Ltd.","Tata Investment Corporation Ltd.","Tenneco Clean Air India Ltd.","Thermax Ltd.","Tube Investments of India Ltd.","Trent Ltd.","Trident Ltd.","United Breweries Ltd.","UCO Bank","Urban Company Ltd.","UTI Asset Management Company Ltd.","Voltas Ltd.","Welspun Living Ltd.","Allied Blenders and Distillers Ltd.","Aditya Birla Lifestyle Brands Ltd.","Afcons Infrastructure Ltd.","Anupam Rasayan India Ltd.","Asahi India Glass Ltd.","Bajaj Housing Finance Ltd.","Bata India Ltd.","BEML Ltd.","Bikaji Foods International Ltd.","BLS International Services Ltd.","Blue Star Ltd.","Cholamandalam Financial Holdings Ltd.","Cochin Shipyard Ltd.","Cyient Ltd.","Dabur India Ltd.","DOMS Industries Ltd.","EIH Ltd.","Emmvee Photovoltaic Power Ltd.","Siemens Energy India Ltd.","Eris Lifesciences Ltd.","Fertilisers and Chemicals Travancore Ltd.","Brainbees Solutions Ltd.","Gallantt Ispat Ltd.","Gillette India Ltd.","Godfrey Phillips India Ltd.","Go Digit General Insurance Ltd.","Godrej Consumer Products Ltd.","Godawari Power & Ispat Ltd.","HDFC Asset Management Company Ltd.","Hindustan Unilever Ltd.","ICICI Prudential Asset Management Company Ltd.","ICICI Lombard General Insurance Company Ltd.","India Cements Ltd.","Indiamart Intermesh Ltd.","Inox Wind Ltd.","Intellect Design Arena Ltd.","IRB Infrastructure Developers Ltd.","Indian Railway Catering And Tourism Corporation Ltd.","Indian Railway Finance Corporation Ltd.","ITI Ltd.","Jain Resource Recycling Ltd.","JBM Auto Ltd.","J.K. Cement Ltd.","Jubilant Pharmova Ltd.","Kec International Ltd.","LG Electronics India Ltd.","LIC Housing Finance Ltd.","Mazagoan Dock Shipbuilders Ltd.","Meesho Ltd.","Max Financial Services Ltd.","Motilal Oswal Financial Services Ltd.","NCC Ltd.","Ola Electric Mobility Ltd.","Page Industries Ltd.","Patanjali Foods Ltd.","Poly Medicure Ltd.","Physicswallah Ltd.","Railtel Corporation Of India Ltd.","RHI MAGNESITA INDIA LTD.","Reliance Power Ltd.","Rail Vikas Nigam Ltd.","Schaeffler India Ltd.","Sobha Ltd.","Suzlon Energy Ltd.","Tata Chemicals Ltd.","Tata Elxsi Ltd.","Techno Electric & Engineering Company Ltd.","Tega Industries Ltd.","Tejas Networks Ltd.","Tata Motors Ltd.","Tata Teleservices (Maharashtra) Ltd.","Vishal Mega Mart Ltd.","Waaree Energies Ltd.","Whirlpool of India Ltd.","Aditya Birla Fashion and Retail Ltd.","Aditya Birla Real Estate Ltd.","Crompton Greaves Consumer Electricals Ltd.","Devyani International Ltd.","HDFC Life Insurance Company Ltd.","Jupiter Wagons Ltd.","Pine Labs Ltd.","Sapphire Foods India Ltd.","Syngene International Ltd.","Titagarh Rail Systems Ltd."],"r":[["BAJAJ-AUTO",8,9,10,10,"11111101111",[0,1,2,3,3,3,4,5,5,6,7],11520.5,0.77,10],["COFORGE",14,15,10,7,"11111111101",[11,1,2,3,3,3,12,5,5,13,7],1721,-1.48,10],["CREDITACC",17,18,10,10,"11111101111",[0,1,16,3,3,3,4,5,5,6,7],1592.8,-1.31,10],["EICHERMOT",19,9,10,10,"11111101111",[11,1,16,3,3,3,4,5,5,6,7],7833.5,-1,10],["GODREJIND",21,22,10,10,"11011111111",[11,1,20,3,3,3,12,5,5,6,7],1317.6,0.63,10],["KARURVYSYA",24,18,10,10,"10111111111",[0,23,16,3,3,3,12,5,5,6,7],342.45,0.63,10],["AJANTPHARM",25,26,9,8,"11011101111",[11,1,20,3,3,3,4,5,5,6,7],3465.2,0.84,10],["ANANDRATHI",28,18,9,8,"01111101111",[27,1,16,3,3,3,4,5,5,6,7],2073.7,1.69,10],["BALKRISIND",29,9,9,7,"11101111101",[11,1,2,5,3,3,12,5,5,13,7],2473.5,7.22,10],["CHOLAFIN",30,18,9,7,"11101101111",[0,1,16,5,3,3,4,5,5,6,7],1849.9,4.29,10],["FEDERALBNK",31,18,9,9,"10111101111",[0,23,2,3,3,3,4,5,5,6,7],358.85,1.33,10],["KALYANKJIL",32,33,9,9,"11101111101",[11,1,2,5,3,3,12,5,5,13,7],612.6,-3.47,10],["LAURUSLABS",34,26,9,8,"01111101111",[27,1,2,3,3,3,4,5,5,6,7],1816.2,1.96,10],["LODHA",35,36,9,8,"11101101111",[11,1,16,5,3,3,4,5,5,6,7],1243.95,-3.36,10],["MRPL",37,38,9,8,"11001111111",[0,1,20,5,3,3,12,5,5,6,7],169.94,1.86,10],["NESTLEIND",39,40,9,8,"01111101111",[27,1,16,3,3,3,4,5,5,6,7],1509.6,-0.73,10],["NYKAA",41,42,9,9,"01111101111",[27,1,16,3,3,3,4,5,5,6,7],333.4,-0.1,10],["REDINGTON",43,44,9,9,"11101101111",[0,1,2,5,3,3,4,5,5,6,7],321.65,3.44,10],["RRKABEL",45,46,9,8,"11110101111",[11,1,16,3,5,3,4,5,5,6,7],2602.8,1.58,10],["SAREGAMA",47,48,9,9,"10111101111",[11,23,16,3,3,3,4,5,5,6,7],522.85,0.28,10],["SUNPHARMA",49,26,9,9,"10111101111",[11,23,16,3,3,3,4,5,5,6,7],1990.5,-0.53,10],["SUNTV",50,48,9,4,"10111101111",[11,23,16,3,3,3,4,5,5,6,7],1990.5,-0.53,10],["TECHM",51,15,9,7,"10111101111",[0,23,2,3,3,3,4,5,5,6,7],1651.3,-1.06,10],["TITAN",52,33,9,8,"01111101111",[27,1,2,3,3,3,4,5,5,6,7],4875.2,0.52,10],["ABCAPITAL",53,18,8,6,"11001101111",[0,1,20,5,3,3,4,5,5,6,7],404.3,2.6,54],["ACE",55,46,8,7,"11101101101",[0,1,16,5,3,3,4,5,5,13,7],1070.3,1.24,54],["ADANIENSOL",56,57,8,7,"01011101111",[27,1,20,3,3,3,4,5,5,6,7],1645.4,-0.82,54],["APOLLOHOSP",58,26,8,8,"00111101111",[27,23,16,3,3,3,4,5,5,6,7],8957,-0.34,54],["ATUL",59,60,8,8,"11100101111",[0,1,16,5,5,3,4,5,5,6,7],6736.5,-0.98,54],["BAJAJFINSV",61,18,8,6,"10101101111",[11,23,2,5,3,3,4,5,5,6,7],1141.2,8.32,54],["BAJFINANCE",62,18,8,8,"10101101111",[11,23,2,5,3,3,4,5,5,6,7],1141.2,8.32,54],["BALRAMCHIN",63,40,8,8,"10011101111",[11,23,20,3,3,3,4,5,5,6,7],586.2,-1.69,54],["BHARATFORG",64,9,8,7,"00111101111",[27,23,16,3,3,3,4,5,5,6,7],2199.8,1.62,54],["BHEL",65,46,8,6,"01011101111",[27,1,20,3,3,3,4,5,5,6,7],407,0.99,54],["CGCL",66,18,8,6,"11001101111",[0,1,20,5,3,3,4,5,5,6,7],232.38,5.24,54],["CHENNPETRO",67,38,8,8,"11001101111",[0,1,20,5,3,3,4,5,5,6,7],1260.6,1.81,54],["CRAFTSMAN",68,9,8,8,"01101101111",[27,1,16,5,3,3,4,5,5,6,7],9873.5,-1.73,54],["DIVISLAB",69,26,8,7,"01101101111",[27,1,2,5,3,3,4,5,5,6,7],8056,2.82,54],["EXIDEIND",70,9,8,8,"10101101111",[11,23,16,5,3,3,4,5,5,6,7],449.8,-0.64,54],["FSL",71,44,8,6,"10101111101",[11,23,2,5,3,3,12,5,5,13,7],302.12,0.83,54],["GLAND",72,26,8,8,"11001101111",[11,1,20,5,3,3,4,5,5,6,7],2502.9,-0.56,54],["GLAXO",73,26,8,6,"10111101101",[11,23,2,3,3,3,4,5,5,13,7],2655.4,1.71,54],["GLENMARK",74,26,8,6,"11001101111",[11,1,20,5,3,3,4,5,5,6,7],2233.9,1.99,54],["GODREJPROP",75,36,8,7,"11001101111",[11,1,20,5,3,3,4,5,5,6,7],2105.7,-0.25,54],["GRANULES",76,26,8,9,"11011001111",[11,1,20,3,3,5,4,5,5,6,7],824.65,-1.12,54],["HAL",77,46,8,8,"10111101101",[11,23,16,3,3,3,4,5,5,13,7],4646.5,1.42,54],["HEG",78,46,8,8,"10101101111",[11,23,16,5,3,3,4,5,5,6,7],657.25,-0.3,54],["HSCL",79,60,8,8,"11001101111",[11,1,20,5,3,3,4,5,5,6,7],750.65,-1.3,54],["ICICIBANK",80,18,8,8,"10011101111",[0,23,20,3,3,3,4,5,5,6,7],1435.4,0.1,54],["IDFCFIRSTB",82,18,8,8,"10111101110",[11,23,16,3,3,3,4,5,5,6,81],84.68,-0.09,54],["IIFL",83,18,8,8,"11101101110",[0,1,2,5,3,3,4,5,5,6,81],608.65,0.13,54],["IPCALAB",84,26,8,8,"10011101111",[11,23,20,3,3,3,4,5,5,6,7],1747.8,-0.63,54],["JUBLINGREA",85,60,8,7,"11011101110",[11,1,20,3,3,3,4,5,5,6,81],735.7,1,54],["KAJARIACER",86,33,8,7,"11011001111",[11,1,20,3,3,5,4,5,5,6,7],1198.3,0.53,54],["LLOYDSME",87,88,8,8,"11100101111",[11,1,16,5,5,3,4,5,5,6,7],2047,1.58,54],["LTF",89,18,8,8,"11011001111",[0,1,20,3,3,5,4,5,5,6,7],311.25,1.63,54],["LUPIN",90,26,8,8,"11001101111",[0,1,20,5,3,3,4,5,5,6,7],2415,-0.26,54],["M&MFIN",91,18,8,8,"10101101111",[0,23,16,5,3,3,4,5,5,6,7],385.75,-1.73,54],["MANAPPURAM",92,18,8,8,"10101101111",[11,23,2,5,3,3,4,5,5,6,7],371.85,0.95,54],["MOTHERSON",93,9,8,7,"10101101111",[11,23,16,5,3,3,4,5,5,6,7],150.75,2.75,54],["NAM-INDIA",94,18,8,8,"11011001111",[11,1,20,3,3,5,4,5,5,6,7],1161.4,1.26,54],["NAUKRI",95,42,8,6,"00111111101",[27,23,16,3,3,3,12,5,5,13,7],1226.25,-1.43,54],["OBEROIRLTY",96,36,8,8,"11011001111",[0,1,20,3,3,5,4,5,5,6,7],1827.7,0.73,54],["OFSS",97,15,8,8,"11001101111",[0,1,20,5,3,3,4,5,5,6,7],11186,0.45,54],["PAYTM",98,18,8,8,"01111101101",[27,1,16,3,3,3,4,5,5,13,7],1343,0.79,54],["RADICO",99,40,8,7,"00111101111",[27,23,2,3,3,3,4,5,5,6,7],4340.8,-0.59,54],["RAINBOW",100,26,8,9,"00111101111",[27,23,16,3,3,3,4,5,5,6,7],1525.4,0.32,54],["RBLBANK",101,18,8,8,"10011101111",[0,23,20,3,3,3,4,5,5,6,7],375.5,-0.67,54],["SHYAMMETL",102,46,8,8,"10011101111",[0,23,20,3,3,3,4,5,5,6,7],1031.3,0.88,54],["SONACOMS",103,9,8,8,"01101101111",[27,1,2,5,3,3,4,5,5,6,7],769.4,0.74,54],["TVSMOTOR",104,9,8,7,"01101101111",[27,1,2,5,3,3,4,5,5,6,7],4313.1,2.49,54],["WOCKPHARMA",105,26,8,7,"01101101111",[27,1,16,5,3,3,4,5,5,6,7],1959.7,2.93,54],["3MINDIA",106,22,7,7,"00011101111",[27,23,20,3,3,3,4,5,5,6,7],34615,-0.93,54],["AARTIIND",107,60,7,7,"11000101111",[11,1,20,5,5,3,4,5,5,6,7],489.1,1.85,54],["ABB",108,46,7,7,"00011101111",[27,23,20,3,3,3,4,5,5,6,7],7284.5,-0.1,54],["ANANTRAJ",109,36,7,7,"10101101101",[11,23,16,5,3,3,4,5,5,13,7],624.5,2.44,54],["APARINDS",110,46,7,-1,"11001001111",[11,1,20,5,3,5,4,5,5,6,7],14348,4.39,54],["ASHOKLEY",111,46,7,5,"10101101101",[0,23,16,5,3,3,4,5,5,13,7],166.18,5.12,54],["ASTERDM",112,26,7,7,"00011101111",[27,23,20,3,3,3,4,5,5,6,7],822.15,1,54],["AUBANK",113,18,7,7,"10011001111",[0,23,20,3,3,5,4,5,5,6,7],1047.3,1.61,54],["AUROPHARMA",114,26,7,7,"10001101111",[0,23,20,5,3,3,4,5,5,6,7],1580.2,0.25,54],["BHARTIARTL",115,116,7,4,"10101101101",[11,23,16,5,3,3,4,5,5,13,7],1972,0.78,54],["BIOCON",117,26,7,7,"00011101111",[27,23,20,3,3,3,4,5,5,6,7],425.7,0.08,54],["BOSCHLTD",118,9,7,8,"10011001111",[11,23,20,3,3,5,4,5,5,6,7],41085,-1.12,54],["CAMS",119,18,7,7,"10011001111",[11,23,20,3,3,5,4,5,5,6,7],796.15,0.38,54],["CIPLA",120,26,7,5,"10101101101",[11,23,16,5,3,3,4,5,5,13,7],1473.2,0.46,54],["DEEPAKFERT",121,60,7,6,"11001001111",[0,1,20,5,3,5,4,5,5,6,7],1552.8,1.33,54],["ECLERX",123,44,7,8,"11000111101",[0,1,20,5,5,3,12,5,5,122,7],1845.5,-3.42,54],["EMCURE",124,26,7,8,"10100101111",[11,23,16,5,5,3,4,5,5,6,7],1960.1,2.57,54],["ETERNAL",125,42,7,6,"01101101101",[27,1,16,5,3,3,4,5,5,13,7],302.45,-2.64,54],["GABRIEL",126,9,7,6,"00101101111",[27,23,16,5,3,3,4,5,5,6,7],1441.8,3.58,54],["GESHIP",127,44,7,7,"11010001111",[0,1,20,3,5,5,4,5,5,6,7],1350.4,-1.52,54],["GRSE",128,46,7,7,"11010001111",[11,1,20,3,5,5,4,5,5,6,7],2601.2,0.58,54],["HEROMOTOCO",129,9,7,6,"11101101100",[0,1,16,5,3,3,4,5,5,122,81],5386,1.15,54],["JINDALSAW",130,46,7,6,"10011001111",[0,23,20,3,3,5,4,5,5,6,7],256.95,1.04,54],["JSWSTEEL",131,88,7,7,"10001101111",[0,23,20,5,3,3,4,5,5,6,7],1270,-0.06,54],["LALPATHLAB",132,26,7,7,"00101101111",[27,23,2,5,3,3,4,5,5,6,7],1905.2,1.41,54],["M&M",133,9,7,6,"11101101100",[0,1,16,5,3,3,4,5,5,13,81],3398.5,3.5,54],["MAPMYINDIA",134,15,7,7,"10100111101",[11,23,16,5,5,3,12,5,5,122,7],1181.65,-0.26,54],["MARICO",135,40,7,7,"00011101111",[27,23,20,3,3,3,4,5,5,6,7],870.65,-1.66,54],["MINDACORP",136,9,7,8,"11001001111",[11,1,20,5,3,5,4,5,5,6,7],700.95,-0.84,54],["NIVABUPA",137,18,7,6,"11000101111",[11,1,20,5,5,3,4,5,5,6,7],87.01,1.27,54],["OIL",138,38,7,7,"10011101101",[0,23,20,3,3,3,4,5,5,13,7],458.6,0.37,54],["PARADEEP",139,60,7,7,"10001111101",[0,23,20,5,3,3,12,5,5,13,7],147.33,-3.94,54],["PERSISTENT",140,15,7,6,"11101101100",[11,1,16,5,3,3,4,5,5,13,81],5549,0.62,54],["PETRONET",141,38,7,5,"10011101101",[0,23,20,3,3,3,4,5,5,13,7],280.75,0.66,54],["PFC",142,18,7,7,"10011001111",[0,23,20,3,3,5,4,5,5,6,7],424.35,-0.45,54],["PFOCUS",143,48,7,7,"01001101111",[27,1,20,5,3,3,4,5,5,6,7],287.11,-1.09,54],["POONAWALLA",144,18,7,6,"11001101101",[11,1,20,5,3,3,4,5,5,13,7],463.55,-2.8,54],["PVRINOX",145,48,7,6,"10110101101",[0,23,2,3,5,3,4,5,5,13,7],1130.6,-0.08,54],["RECLTD",146,18,7,7,"10111101100",[0,23,16,3,3,3,4,5,5,13,81],372.95,-0.52,54],["RKFORGE",147,9,7,6,"00101101111",[27,23,16,5,3,3,4,5,5,6,7],651.15,3.95,54],["SAILIFE",148,26,7,7,"00110101111",[27,23,16,3,5,3,4,5,5,6,7],1315.1,-0.01,54],["SHRIRAMFIN",149,18,7,7,"10011001111",[0,23,20,3,3,5,4,5,5,6,7],1046.7,1.9,54],["SIEMENS",150,46,7,7,"00101101111",[27,23,16,5,3,3,4,5,5,6,7],3760,2.77,54],["SOLARINDS",151,60,7,5,"01011001111",[27,1,20,3,3,5,4,5,5,6,7],18391,1.87,54],["SONATSOFTW",152,15,7,5,"10100111101",[0,23,16,5,5,3,12,5,5,13,7],322.45,4.39,54],["STARHEALTH",153,18,7,8,"10001101111",[11,23,20,5,3,3,4,5,5,6,7],601,-1.54,54],["SUMICHEM",154,60,7,6,"10001111101",[11,23,20,5,3,3,12,5,5,13,7],510.3,0.37,54],["TATACAP",155,18,7,5,"10110101101",[0,23,16,3,5,3,4,5,5,122,7],365.4,1.25,54],["TORNTPHARM",156,26,7,6,"00101101111",[27,23,16,5,3,3,4,5,5,6,7],5122.8,5.15,54],["UNITDSPR",157,40,7,7,"00111101101",[27,23,2,3,3,3,4,5,5,13,7],1515.9,-1.04,54],["USHAMART",158,46,7,8,"10011001111",[0,23,20,3,3,5,4,5,5,6,7],495.95,-1.28,54],["VEDL",159,88,7,6,"11010001111",[0,1,20,3,5,5,4,5,5,6,7],264.25,-1.21,54],["VIJAYA",160,26,7,7,"01011001111",[27,1,20,3,3,5,4,5,5,6,7],1344.4,-1.16,54],["WELCORP",161,46,7,8,"10001101111",[0,23,20,5,3,3,4,5,5,6,7],1650.6,-0.27,54],["ZYDUSLIFE",162,26,7,6,"10001101111",[0,23,20,5,3,3,4,5,5,6,7],1126.8,1.05,54],["360ONE",163,18,6,6,"10001101110",[11,23,20,5,3,3,4,5,5,6,81],1135.3,-0.66,164],["ABSLAMC",165,18,6,6,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],1011.8,0.3,164],["ACMESOLAR",166,57,6,6,"11000001111",[11,1,20,5,5,5,4,5,5,6,7],362.6,0.53,164],["ADANIENT",167,88,6,7,"10010001111",[11,23,20,3,5,5,4,5,5,6,7],3009.5,-1.3,164],["ADANIPOWER",168,57,6,5,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],211.31,1.12,164],["AEGISLOG",169,38,6,7,"01001001111",[27,1,20,5,3,5,4,5,5,6,7],1280.8,2.52,164],["AEGISVOPAK",170,38,6,6,"00010101111",[27,23,20,3,5,3,4,5,5,6,7],290.16,-0.73,164],["AIAENG",171,46,6,6,"10010001111",[11,23,20,3,5,5,4,5,5,6,7],4591,0.6,164],["AIIL",172,18,6,6,"10010101101",[0,23,20,3,5,3,4,5,5,13,7],539.3,-1.21,164],["ALKEM",173,26,6,6,"10101101100",[0,23,16,5,3,3,4,5,5,13,81],5751.5,-1.12,164],["ANGELONE",174,18,6,6,"11000001111",[0,1,20,5,5,5,4,5,5,6,7],297.95,2.16,164],["ANTHEM",175,26,6,6,"00100101111",[27,23,16,5,5,3,4,5,5,6,7],809.2,3.16,164],["ARE&M",176,9,6,4,"10101101100",[0,23,16,5,3,3,4,5,5,13,81],910.45,0.4,164],["ATHERENERG",178,9,6,5,"00100101111",[177,23,16,5,5,3,4,5,5,6,7],1260.3,1.56,164],["AXISBANK",179,18,6,6,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],1229.5,0.05,164],["BAJAJHLDNG",180,18,6,6,"10101101100",[0,23,16,5,3,3,4,5,5,13,81],11343,3.4,164],["BELRISE",181,9,6,6,"10010001111",[11,23,20,3,5,5,4,5,5,6,7],236.73,1.69,164],["BERGEPAINT",182,33,6,3,"10010001111",[11,23,20,3,5,5,4,5,5,6,7],236.73,1.69,164],["CAPLIPOINT",183,26,6,6,"10001001111",[0,23,20,5,3,5,4,5,5,6,7],2516.8,-0.77,164],["CCL",184,40,6,6,"10001001111",[11,23,20,5,3,5,4,5,5,6,7],1155.3,-1.59,164],["CEMPRO",185,186,6,6,"10001001111",[11,23,20,5,3,5,4,5,5,6,7],1367.8,0.67,164],["CHOICEIN",187,18,6,6,"00101101101",[27,23,16,5,3,3,4,5,5,13,7],822.95,3.04,164],["CONCOR",188,44,6,5,"10110101100",[11,23,16,3,5,3,4,5,5,13,81],525.5,0.07,164],["CONCORDBIO",189,26,6,3,"01100101101",[27,1,16,5,5,3,4,5,5,13,7],1420.8,6.83,164],["CRISIL",190,18,6,7,"11010101100",[11,1,20,3,5,3,4,5,5,13,81],4359.8,-1.07,164],["CUB",191,18,6,7,"11000001111",[0,1,20,5,5,5,4,5,5,6,7],206.5,-4.17,164],["DEEPAKNTR",192,60,6,6,"10010101101",[11,23,20,3,5,3,4,5,5,13,7],1662.2,1.11,164],["DIXON",193,33,6,5,"11001101100",[11,1,20,5,3,3,4,5,5,13,81],14049,-2.02,164],["ELGIEQUIP",194,46,6,6,"10010001111",[11,23,20,3,5,5,4,5,5,6,7],569.65,0.09,164],["ENDURANCE",195,9,6,7,"10001101101",[11,23,20,5,3,3,4,5,5,13,7],2758.3,-1.64,164],["ENGINERSIN",196,186,6,6,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],222.38,0.18,164],["FINCABLES",197,46,6,5,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],987.6,1.5,164],["FIVESTAR",198,18,6,6,"10000101111",[0,23,20,5,5,3,4,5,5,6,7],547.95,-0.91,164],["FLUOROCHEM",199,60,6,7,"00001101111",[27,23,20,5,3,3,4,5,5,6,7],4366.8,-0.64,164],["GAIL",200,38,6,5,"10101101100",[0,23,16,5,3,3,4,5,5,13,81],181.44,4.49,164],["GRASIM",201,202,6,6,"10010001111",[11,23,20,3,5,5,4,5,5,6,7],3100.8,-0.13,164],["HAVELLS",203,33,6,6,"10110101100",[11,23,16,3,5,3,4,5,5,122,81],1260.7,-0.08,164],["HCLTECH",204,15,6,6,"10110101100",[0,23,2,3,5,3,4,5,5,122,81],1346.9,-0.43,164],["HINDALCO",205,88,6,6,"10000101111",[0,23,20,5,5,3,4,5,5,6,7],974.45,0.42,164],["HINDZINC",206,88,6,6,"11010101100",[0,1,20,3,5,3,4,5,5,13,81],539.2,0.62,164],["HOMEFIRST",207,18,6,6,"10011001101",[0,23,20,3,3,5,4,5,5,13,7],1189,0.07,164],["HONASA",208,40,6,6,"01010001111",[27,1,20,3,5,5,4,5,5,6,7],449.55,0.81,164],["IDEA",209,116,6,6,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],13.01,1.09,164],["IGIL",210,44,6,6,"11000001111",[0,1,20,5,5,5,4,5,5,6,7],353.45,2.32,164],["IKS",211,15,6,5,"10000101111",[11,23,20,5,5,3,4,5,5,6,7],1848.9,3.74,164],["INDHOTEL",212,42,6,7,"10011101100",[11,23,20,3,3,3,4,5,5,13,81],738.55,-1.43,164],["INDIANB",213,18,6,5,"10011101100",[0,23,20,3,3,3,4,5,5,13,81],836.5,1.12,164],["J&KBANK",214,18,6,6,"10000011111",[0,23,20,5,5,5,12,5,5,6,7],156,1.47,164],["JPPOWER",215,57,6,4,"10101101100",[0,23,16,5,3,3,4,5,5,13,81],18.29,5.6,164],["KIMS",216,26,6,6,"00011001111",[27,23,20,3,3,5,4,5,5,6,7],804.7,-0.29,164],["LEMONTREE",217,42,6,4,"10000101111",[0,23,20,5,5,3,4,5,5,6,7],494.6,5.66,164],["LENSKART",218,42,6,5,"10000101111",[0,23,20,5,5,3,4,5,5,6,7],494.6,5.66,164],["LICI",219,18,6,5,"10011001101",[0,23,20,3,3,5,4,5,5,13,7],424.7,0.44,164],["LTFOODS",220,40,6,5,"10101101100",[0,23,16,5,3,3,4,5,5,13,81],410.35,3.34,164],["LTTS",221,15,6,5,"10110101100",[0,23,16,3,5,3,4,5,5,122,81],3555.4,-0.1,164],["MAHABANK",222,18,6,6,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],79.33,0.09,164],["MARUTI",223,9,6,6,"10110001101",[11,23,16,3,5,5,4,5,5,122,7],14234,0.32,164],["MCX",224,18,6,6,"01010001111",[27,1,20,3,5,5,4,5,5,6,7],2692.2,0.57,164],["MUTHOOTFIN",225,18,6,6,"01010001111",[27,1,20,3,5,5,4,5,5,6,7],2692.2,0.57,164],["NATIONALUM",226,88,6,5,"11000101101",[0,1,20,5,5,3,4,5,5,13,7],350.05,0.69,164],["NAVINFLUOR",227,60,6,5,"01001001111",[27,1,20,5,3,5,4,5,5,6,7],7567.5,2.45,164],["NETWEB",228,15,6,5,"01000101111",[27,1,20,5,5,3,4,5,5,6,7],4524,7.84,164],["NEULANDLAB",229,26,6,7,"01001001111",[27,1,20,5,3,5,4,5,5,6,7],19043,-0.83,164],["NEWGEN",230,15,6,5,"10100111100",[0,23,16,5,5,3,12,5,5,122,81],555.7,0.5,164],["NIACL",231,18,6,6,"10001011101",[11,23,20,5,3,5,12,5,5,13,7],173.62,4.66,164],["NLCINDIA",232,57,6,7,"11000001111",[0,1,20,5,5,5,4,5,5,6,7],297.9,2.06,164],["NMDC",233,88,6,7,"11000001111",[0,1,20,5,5,5,4,5,5,6,7],85.04,0.04,164],["NUVAMA",234,18,6,5,"10010001111",[11,23,20,3,5,5,4,5,5,6,7],1803.8,0.58,164],["NUVOCO",235,202,6,6,"10010111100",[11,23,20,3,5,3,12,5,5,13,81],344.65,-1.3,164],["PCBL",236,60,6,7,"10001011101",[11,23,20,5,3,5,12,5,5,13,7],317.9,-3.08,164],["PFIZER",237,26,6,6,"10110101100",[11,23,16,3,5,3,4,5,5,122,81],4823.9,0.47,164],["PGEL",238,33,6,6,"00101101101",[27,23,16,5,3,3,4,5,5,13,7],613.35,0.06,164],["PIDILITIND",239,60,6,8,"00011001111",[27,23,20,3,3,5,4,5,5,6,7],1611.4,-1.14,164],["PNB",240,18,6,6,"10110101100",[0,23,16,3,5,3,4,5,5,122,81],112.71,0.96,164],["PNBHOUSING",241,18,6,5,"10001001111",[0,23,20,5,3,5,4,5,5,6,7],1053.1,1.94,164],["POLYCAB",242,46,6,7,"11000001111",[11,1,20,5,5,5,4,5,5,6,7],9106.5,2.37,164],["PPLPHARMA",243,26,6,6,"00110101101",[177,23,16,3,5,3,4,5,5,13,7],195.61,-0.56,164],["PTCIL",244,46,6,6,"01010101110",[27,1,20,3,5,3,4,5,5,6,81],17737,-0.33,164],["SAIL",245,88,6,5,"10000101111",[0,23,20,5,5,3,4,5,5,6,7],169.03,-0.01,164],["SRF",246,60,6,6,"11010001101",[11,1,20,3,5,5,4,5,5,122,7],2622.5,0.68,164],["TARIL",247,46,6,5,"10010011101",[11,23,20,3,5,5,12,5,5,13,7],296.5,1,164],["TATAPOWER",248,57,6,5,"10010101101",[11,23,20,3,5,3,4,5,5,13,7],380.7,1.26,164],["TATATECH",249,15,6,5,"00010101111",[27,23,20,3,5,3,4,5,5,6,7],747.65,-0.49,164],["THELEELA",250,42,6,6,"10000101111",[0,23,20,5,5,3,4,5,5,6,7],494.6,5.66,164],["TORNTPOWER",251,57,6,6,"10010101101",[0,23,20,3,5,3,4,5,5,13,7],1413.3,-0.72,164],["ULTRACEMCO",252,202,6,5,"10011101100",[11,23,20,3,3,3,4,5,5,13,81],11903,0.47,164],["UNIONBANK",253,18,6,6,"10011001101",[0,23,20,3,3,5,4,5,5,13,7],171.24,0.49,164],["YESBANK",254,18,6,6,"10010001111",[0,23,20,3,5,5,4,5,5,6,7],22.77,1.02,164],["AADHARHFC",255,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,13,7],496.7,1.21,164],["AAVAS",256,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,122,7],1359.8,-0.21,164],["ABBOTINDIA",257,26,5,5,"10010101100",[11,23,20,3,5,3,4,5,5,13,81],27800,0.89,164],["ACUTAAS",258,26,5,5,"01000001111",[27,1,20,5,5,5,4,5,5,6,7],3104.9,-3.99,164],["ADANIGREEN",259,57,5,5,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],1383,1.79,164],["ADANIPORTS",260,44,5,5,"10000001111",[0,23,20,5,5,5,4,5,5,6,7],1696.5,1.95,164],["ATGL",261,38,5,4,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],651.45,0.2,164],["BANDHANBNK",262,18,5,5,"10000001111",[0,23,20,5,5,5,4,5,5,6,7],174.13,0.82,164],["BANKINDIA",263,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,13,7],137.95,0.53,164],["BAYERCROP",264,60,5,5,"10010101100",[0,23,20,3,5,3,4,5,5,122,81],4234.4,0.19,164],["BLUEDART",265,44,5,5,"10100101100",[11,23,16,5,5,3,4,5,5,122,81],5160.3,2.67,164],["BLUEJET",266,26,5,5,"10100101100",[11,23,16,5,5,3,4,5,5,13,81],626.25,2.25,164],["BPCL",267,38,5,5,"10010101100",[0,23,20,3,5,3,4,5,5,122,81],319.75,1.25,164],["BRIGADE",268,36,5,4,"10100101100",[0,23,16,5,5,3,4,5,5,122,81],580.2,2.67,164],["BSE",269,18,5,5,"01000001111",[27,1,20,5,5,5,4,5,5,6,7],3646.2,3.28,164],["CANFINHOME",270,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,13,7],820.6,0.53,164],["CARBORUNIV",271,46,5,5,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],1063.8,1.22,164],["CARTRADE",272,42,5,5,"00001011110",[27,23,20,5,3,5,12,5,5,6,81],2719.6,-2.58,164],["CESC",273,57,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,13,7],165.57,0.39,164],["CIEINDIA",274,9,5,5,"10010001110",[0,23,20,3,5,5,4,5,5,6,81],408.6,-0.8,164],["COALINDIA",275,38,5,4,"10010001110",[0,23,20,3,5,5,4,5,5,6,81],414.15,-0.73,164],["COROMANDEL",276,60,5,5,"10010101100",[11,23,20,3,5,3,4,5,5,122,81],2073.6,0.94,164],["CUMMINSIND",277,46,5,5,"01000001111",[27,1,20,5,5,5,4,5,5,6,7],5519,2.28,164],["DALBHARAT",278,202,5,5,"10010101100",[11,23,20,3,5,3,4,5,5,122,81],1799.7,0.31,164],["DATAPATTNS",279,46,5,6,"00000011111",[27,23,20,5,5,5,12,5,5,6,7],4281,-4.06,164],["DELHIVERY",280,44,5,5,"00001001111",[27,23,20,5,3,5,4,5,5,6,7],481.95,2.91,164],["DLF",281,36,5,5,"10001001101",[11,23,20,5,3,5,4,5,5,13,7],659.3,0.68,164],["ESCORTS",282,46,5,5,"10100101100",[0,23,16,5,5,3,4,5,5,122,81],3086,2.4,164],["FORCEMOT",283,9,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,13,7],17902,1.61,164],["GICRE",284,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,122,7],356.6,-0.03,164],["GMDCLTD",285,88,5,5,"10000001111",[0,23,20,5,5,5,4,5,5,6,7],564.25,0.82,164],["GMRAIRPORT",286,44,5,5,"01000001111",[27,1,20,5,5,5,4,5,5,6,7],105.26,1.3,164],["GVT&D",287,46,5,5,"01000001111",[27,1,20,5,5,5,4,5,5,6,7],4323.3,2.88,164],["HDBFS",288,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,122,7],686.35,0.79,164],["HUDCO",289,18,5,4,"11010001100",[0,1,20,3,5,5,4,5,5,122,81],195.1,-1.02,164],["HYUNDAI",290,9,5,5,"10100101100",[11,23,2,5,5,3,4,5,5,13,81],2180.7,8.05,164],["ICICIPRULI",291,18,5,5,"10010101100",[11,23,20,3,5,3,4,5,5,122,81],515.4,0.94,164],["IEX",292,18,5,5,"10100101100",[0,23,16,5,5,3,4,5,5,13,81],132.24,0.64,164],["IFCI",293,18,5,4,"00001001111",[27,23,20,5,3,5,4,5,5,6,7],76.54,4.11,164],["INDIGO",294,44,5,4,"00011001101",[177,23,20,3,3,5,4,5,5,13,7],5171,-1.14,164],["INDUSINDBK",295,18,5,5,"00000101111",[27,23,20,5,5,3,4,5,5,6,7],1012.45,0.1,164],["IOB",296,18,5,5,"11010001100",[0,1,20,3,5,5,4,5,5,122,81],33.9,0.5,164],["ITCHOTELS",297,42,5,4,"10010001101",[11,23,20,3,5,5,4,5,5,122,7],162.37,1.14,164],["JIOFIN",298,18,5,4,"01100101100",[27,1,16,5,5,3,4,5,5,122,81],256.46,3.85,164],["JMFINANCIL",299,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,122,7],122.16,0.67,164],["JSL",300,88,5,5,"10010101100",[0,23,20,3,5,3,4,5,5,122,81],734.8,-0.4,164],["JSWDULUX",301,33,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,122,7],2938.8,-0.49,164],["JSWENERGY",302,57,5,6,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],554.65,2.01,164],["JSWINFRA",303,44,5,6,"10000001111",[11,23,20,5,5,5,4,5,5,6,7],312.4,-2.08,164],["KAYNES",304,46,5,5,"00100111100",[27,23,16,5,5,3,12,5,5,122,81],3804.6,5.06,164],["KFINTECH",305,18,5,5,"10000111100",[11,23,20,5,5,3,12,5,5,122,81],937.9,-0.28,164],["KIRLOSENG",306,46,5,7,"10000111100",[11,23,20,5,5,3,12,5,5,122,81],937.9,-0.28,164],["KPIL",307,186,5,5,"10000001111",[0,23,20,5,5,5,4,5,5,6,7],1289.6,0.54,164],["KPRMILL",308,309,5,6,"10000001111",[11,23,20,5,5,5,4,5,5,6,7],1049.8,1.6,164],["LINDEINDIA",310,60,5,5,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],6745,1.63,164],["LTM",311,15,5,5,"10100101100",[0,23,16,5,5,3,4,5,5,122,81],4362.1,-1.79,164],["MEDANTA",312,26,5,6,"00100101110",[27,23,16,5,5,3,4,5,5,6,81],1405.6,-0.76,164],["MMTC",313,44,5,6,"11000001101",[0,1,20,5,5,5,4,5,5,13,7],62.66,4.28,164],["MRF",314,9,5,5,"10010101100",[0,23,20,3,5,3,4,5,5,122,81],132770,-1.55,164],["NATCOPHARM",315,26,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,13,7],917,-1.38,164],["NH",316,26,5,7,"00001101110",[27,23,20,5,3,3,4,5,5,6,81],2029.2,-2.46,164],["NTPCGREEN",317,57,5,5,"01010001101",[27,1,20,3,5,5,4,5,5,122,7],90.03,-0.64,164],["OLECTRA",318,9,5,5,"01010001101",[27,1,20,3,5,5,4,5,5,13,7],1324.2,-0.21,164],["ONGC",319,38,5,5,"10010101100",[0,23,20,3,5,3,4,5,5,13,81],242.53,0.39,164],["PIIND",320,60,5,5,"10010101100",[11,23,20,3,5,3,4,5,5,122,81],2751.2,-0.94,164],["PIRAMALFIN",321,18,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,122,7],2055.5,1.32,164],["POWERGRID",322,57,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,13,7],284.25,-0.51,164],["POWERINDIA",323,46,5,6,"01000001111",[27,1,20,5,5,5,4,5,5,6,7],32175,2.96,164],["PREMIERENE",324,46,5,5,"11000001110",[11,1,20,5,5,5,4,5,5,6,81],1022.2,4.02,164],["PRESTIGE",325,36,5,5,"00001001111",[27,23,20,5,3,5,4,5,5,6,7],1616.2,1.34,164],["SAGILITY",326,15,5,6,"11000101100",[0,1,20,5,5,3,4,5,5,122,81],43.4,-5.61,164],["SAMMAANCAP",327,18,5,5,"00010001111",[177,23,20,3,5,5,4,5,5,6,7],162.43,1.52,164],["SARDAEN",328,88,5,5,"10000101101",[0,23,20,5,5,3,4,5,5,13,7],516.6,0.94,164],["SBFC",329,18,5,5,"11010001100",[0,1,20,3,5,5,4,5,5,122,81],90.4,0.27,164],["SBICARD",330,18,5,6,"11010001100",[0,1,20,3,5,5,4,5,5,122,81],90.4,0.27,164],["SBIN",331,18,5,5,"10011001100",[0,23,20,3,3,5,4,5,5,13,81],1027.4,0.2,164],["SCHNEIDER",332,46,5,4,"00001001111",[27,23,20,5,3,5,4,5,5,6,7],1355.3,4.38,164],["SCI",333,44,5,6,"10000001111",[0,23,20,5,5,5,4,5,5,6,7],291.45,4.67,164],["SIGNATURE",334,36,5,5,"11000101100",[0,1,20,5,5,3,4,5,5,122,81],820.45,0.86,164],["SUNDARMFIN",335,18,5,4,"10100101100",[0,23,16,5,5,3,4,5,5,13,81],4665.6,3.89,164],["SYRMA",336,46,5,5,"01000001111",[27,1,20,5,5,5,4,5,5,6,7],1366.8,-0.8,164],["TATASTEEL",337,88,5,5,"10000101101",[0,23,20,5,5,3,4,5,5,13,7],189.69,1.48,164],["TBOTEK",338,42,5,5,"01100001101",[27,1,16,5,5,5,4,5,5,13,7],1531.2,2.18,164],["TCS",339,15,5,5,"10100101100",[0,23,16,5,5,3,4,5,5,122,81],2365.6,-2.72,164],["TIMKEN",340,46,5,5,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],3145.4,1.54,164],["TMPV",341,9,5,5,"10010001101",[0,23,20,3,5,5,4,5,5,122,7],339.75,1.66,164],["TRAVELFOOD",342,42,5,5,"10010001101",[11,23,20,3,5,5,4,5,5,13,7],1302.9,1.85,164],["TRITURBINE",343,46,5,4,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],601.7,-0.95,164],["UNOMINDA",344,9,5,5,"00110101100",[27,23,16,3,5,3,4,5,5,13,81],1180.5,0.66,164],["UPL",345,60,5,5,"10010101100",[0,23,20,3,5,3,4,5,5,122,81],604.3,0.29,164],["VBL",346,40,5,5,"10000001111",[11,23,20,5,5,5,4,5,5,6,7],442.3,-2.01,164],["VTL",347,309,5,5,"10000001111",[0,23,20,5,5,5,4,5,5,6,7],585.8,-2.71,164],["WIPRO",348,15,5,6,"10010101100",[0,23,20,3,5,3,4,5,5,122,81],183.65,-1.44,164],["ZEEL",349,48,5,6,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],2417.9,1.54,164],["ZENSARTECH",351,15,5,5,"10000111100",[0,23,20,5,5,3,350,5,5,122,81],507.95,-2.49,164],["ZENTEC",352,46,5,4,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],1624.2,0.54,164],["ZFCVINDIA",353,9,5,4,"00010001111",[27,23,20,3,5,5,4,5,5,6,7],2417.9,1.54,164],["ZYDUSWELL",354,40,5,5,"00001001111",[27,23,20,5,3,5,4,5,5,6,7],577.55,2.04,164],["ACC",355,202,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],1357.4,0.07,164],["AFFLE",356,15,4,4,"10000101100",[11,23,20,5,5,3,4,5,5,13,81],1586,-2.26,164],["AMBER",357,33,4,3,"00000101101",[27,23,20,5,5,3,4,5,5,13,7],7440.5,0.53,164],["AMBUJACEM",358,202,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],432.2,-0.46,164],["APOLLOTYRE",359,9,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],428.15,1.17,164],["APTUS",360,18,4,5,"10000001101",[0,23,20,5,5,5,4,5,5,13,7],261.2,-5.77,164],["ASIANPAINT",361,33,4,5,"00010001110",[27,23,20,3,5,5,4,5,5,6,81],2747.3,0.04,164],["ASTRAL",362,46,4,4,"00010101100",[27,23,20,3,5,3,4,5,5,13,81],1448.6,-1.58,164],["AWL",363,40,4,5,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],189.44,0.99,164],["BANKBARODA",364,18,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],242.6,0.39,164],["BBTC",365,40,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],1497.1,0.25,164],["BDL",366,46,4,4,"00010001101",[27,23,20,3,5,5,4,5,5,122,7],1253.1,0.58,164],["BEL",367,46,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,13,81],387.85,0.77,164],["BHARTIHEXA",368,116,4,5,"10000101100",[11,23,20,5,5,3,4,5,5,122,81],1607.5,-2.81,164],["BRITANNIA",369,40,4,5,"00010101100",[27,23,20,3,5,3,4,5,5,122,81],5416.5,-1.95,164],["BSOFT",370,15,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],302.4,-1.27,164],["CANBK",371,18,4,3,"10010001100",[0,23,20,3,5,5,4,5,5,13,81],124.98,0.56,164],["CANHLIFE",373,18,4,4,"10000101100",[11,23,20,5,5,3,4,5,5,122,372],146.45,-0.46,164],["CASTROLIND",374,38,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],185.21,0.21,164],["CDSL",375,18,4,4,"00010001101",[27,23,20,3,5,5,4,5,5,122,7],1333,-0.25,164],["CEATLTD",376,9,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,13,81],3429.9,-0.98,164],["CENTRALBK",377,18,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],30.97,-0.16,164],["CGPOWER",378,46,4,4,"00000001111",[27,23,20,5,5,5,4,5,5,6,7],863.4,3.7,164],["CHALET",379,42,4,4,"10000001101",[11,23,20,5,5,5,4,5,5,122,7],811.4,0.8,164],["CHAMBLFERT",380,60,4,4,"10000001101",[0,23,20,5,5,5,4,5,5,13,7],438.9,-1.56,164],["CLEAN",381,60,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],734.05,0.69,164],["COHANCE",382,26,4,4,"00010011100",[27,23,20,3,5,5,12,5,5,122,81],425.05,-0.06,164],["COLPAL",383,40,4,3,"10000101100",[11,23,20,5,5,3,4,5,5,122,81],2076.1,-0.42,164],["CPPLUS",384,46,4,4,"00000001111",[27,23,20,5,5,5,4,5,5,6,7],3391,4.02,164],["DCMSHRIRAM",385,22,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],1033.9,-2.08,164],["DMART",386,42,4,3,"00010001101",[27,23,20,3,5,5,4,5,5,13,7],3921,1.21,164],["DRREDDY",387,26,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,13,81],1148.1,0.29,164],["EIDPARRY",388,40,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],760.05,-0.41,164],["ELECON",389,46,4,4,"10000001101",[11,23,20,5,5,5,4,5,5,13,7],419.05,0.43,164],["EMAMILTD",390,40,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],398.05,-1.31,164],["FORTIS",391,26,4,4,"00010001101",[27,23,20,3,5,5,4,5,5,13,7],945,-0.41,164],["GRAPHITE",392,46,4,6,"00000101101",[27,23,20,5,5,3,4,5,5,13,7],656.4,-1.4,164],["GRAVITA",393,88,4,4,"10000001101",[11,23,20,5,5,5,4,5,5,13,7],1616.4,2.43,164],["GROWW",394,18,4,4,"00010001101",[27,23,20,3,5,5,4,5,5,122,7],194.37,1.06,164],["HBLENGINE",395,46,4,4,"11000001100",[0,1,20,5,5,5,4,5,5,122,81],718.7,2.77,164],["HDFCBANK",396,18,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],748.15,-0.77,164],["HEXT",397,15,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],561.65,-2.42,164],["HFCL",398,116,4,6,"01000001011",[27,1,20,5,5,5,4,5,3,6,7],193.92,5,164],["HINDCOPPER",399,88,4,4,"01000001101",[27,1,20,5,5,5,4,5,5,13,7],491.6,2.36,164],["HINDPETRO",400,38,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],389.75,0.33,164],["HONAUT",401,46,4,6,"00000001111",[27,23,20,5,5,5,4,5,5,6,7],38155,-3.42,164],["IDBI",402,18,4,5,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],83.75,-0.35,164],["IGL",403,38,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],151.98,0.16,164],["INDGN",404,26,4,4,"10000001101",[11,23,20,5,5,5,4,5,5,13,7],515.15,0.09,164],["INDUSTOWER",405,116,4,5,"10000101100",[0,23,20,5,5,3,4,5,5,13,81],391.1,-0.46,164],["INFY",406,15,4,5,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],1130.1,-2.16,164],["IOC",407,38,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],140.17,0.16,164],["IRCON",408,186,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],125.99,0.29,164],["IREDA",409,18,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],119.59,-0.24,164],["ITC",410,40,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],281,-1.42,164],["JINDALSTEL",411,88,4,4,"10000101100",[11,23,20,5,5,3,4,5,5,13,81],1102.4,0.8,164],["JKTYRE",412,9,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,13,81],399.75,0.63,164],["JSWCEMENT",413,202,4,4,"00010001101",[177,23,20,3,5,5,4,5,5,13,7],133.1,1.38,164],["JUBLFOOD",414,42,4,4,"00010101100",[27,23,20,3,5,3,4,5,5,122,81],438.25,-0.35,164],["JYOTICNC",415,46,4,5,"00010101100",[27,23,20,3,5,3,4,5,5,122,81],808.65,-0.5,164],["KEI",416,46,4,6,"00000001111",[27,23,20,5,5,5,4,5,5,6,7],4999,4.16,164],["KOTAKBANK",417,18,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],390.3,0.23,164],["KPITTECH",418,15,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],598.4,1.47,164],["LATENTVIEW",419,15,4,4,"10000101100",[11,23,20,5,5,3,4,5,5,122,81],316.2,1.85,164],["LT",420,186,4,5,"10000001101",[11,23,20,5,5,5,4,5,5,13,7],3938.9,0.03,164],["MANKIND",421,26,4,4,"10000001101",[11,23,20,5,5,5,4,5,5,13,7],2469.6,-4.13,164],["MAXHEALTH",422,26,4,5,"00001001101",[27,23,20,5,3,5,4,5,5,13,7],1098.5,-2.34,164],["MGL",423,38,4,4,"10000001101",[0,23,20,5,5,5,4,5,5,122,7],1120.5,0.18,164],["MPHASIS",424,15,4,4,"10000101100",[0,23,20,5,5,3,4,5,5,122,81],2342.3,-0.19,164],["MSUMI",425,9,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],40.61,-1.07,164],["NAVA",426,57,4,3,"10010001100",[0,23,20,3,5,5,4,5,5,13,81],553.45,0.05,164],["NBCC",427,186,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],94.8,1.31,164],["NHPC",428,57,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],78.73,0.85,164],["NSLNISP",429,88,4,4,"01000001101",[27,1,20,5,5,5,4,5,5,13,7],43.02,0.89,164],["NTPC",430,57,4,3,"10010001100",[0,23,20,3,5,5,4,5,5,13,81],347.25,0.7,164],["ONESOURCE",431,26,4,5,"01000001101",[177,1,20,5,5,5,4,5,5,13,7],1619.7,-4.06,164],["PHOENIXLTD",432,36,4,4,"00000001111",[27,23,20,5,5,5,4,5,5,6,7],1893.3,0.29,164],["POLICYBZR",433,18,4,4,"01010001100",[27,1,20,3,5,5,4,5,5,122,81],1601.5,0.5,164],["RAMCOCEM",434,202,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],918.25,0.36,164],["RELIANCE",435,38,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],1307.8,1.15,164],["RITES",436,186,4,4,"10000011100",[0,23,20,5,5,5,12,5,5,122,81],214.09,-1.72,164],["SBILIFE",437,18,4,4,"00010101100",[27,23,20,3,5,3,4,5,5,13,81],1882,0.24,164],["SHREECEM",438,202,4,5,"00010001101",[27,23,20,3,5,5,4,5,5,13,7],26055,-1.51,164],["SJVN",439,57,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],68.62,0.25,164],["SPLPETRO",440,60,4,4,"11000001100",[0,1,20,5,5,5,4,5,5,13,81],713.15,1.35,164],["SUPREMEIND",441,46,4,4,"10000101100",[11,23,20,5,5,3,4,5,5,122,81],3465.4,0.16,164],["SWANCORP",442,60,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],307.8,0.38,164],["SWIGGY",443,42,4,5,"01000101100",[177,1,20,5,5,3,4,5,5,122,81],284.86,-3.73,164],["TATACOMM",444,116,4,4,"00010001110",[27,23,20,3,5,5,4,5,5,6,81],1756.4,-0.98,164],["TATACONSUM",445,40,4,3,"00010001101",[27,23,20,3,5,5,4,5,5,122,7],1083.1,-1.01,164],["TATAINVEST",446,18,4,4,"01000101100",[27,1,20,5,5,3,4,5,5,122,81],679.45,0.12,164],["TENNIND",447,9,4,4,"10000001101",[11,23,20,5,5,5,4,5,5,122,7],537.95,-0.18,164],["THERMAX",448,46,4,4,"00000001111",[27,23,20,5,5,5,4,5,5,6,7],4306,1.28,164],["TIINDIA",449,9,4,4,"01000001101",[27,1,20,5,5,5,4,5,5,13,7],2753,2.39,164],["TRENT",450,42,4,3,"00001001101",[27,23,20,5,3,5,4,5,5,13,7],3005.9,0.22,164],["TRIDENT",451,309,4,4,"10010001100",[11,23,20,3,5,5,4,5,5,122,81],24.71,0,164],["UBL",452,40,4,5,"00010101100",[27,23,20,3,5,3,4,5,5,122,81],1418.8,-1.2,164],["UCOBANK",453,18,4,4,"10000001101",[0,23,20,5,5,5,4,5,5,122,7],26.17,1.36,164],["URBANCO",454,42,4,5,"00010001101",[177,23,20,3,5,5,4,5,5,122,7],129.39,-0.85,164],["UTIAMC",455,18,4,4,"10010001100",[0,23,20,3,5,5,4,5,5,122,81],903.1,-0.68,164],["VOLTAS",456,33,4,4,"00010101100",[27,23,20,3,5,3,4,5,5,122,81],1328.9,-0.32,164],["WELSPUNLIV",457,309,4,6,"00000001111",[27,23,20,5,5,5,4,5,5,6,7],155.94,-2.62,164],["ABDL",458,40,3,3,"00000001110",[27,23,20,5,5,5,4,5,5,6,81],619.5,-4.46,164],["ABLBL",459,42,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],94.67,0.23,164],["AFCONS",460,186,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],271.15,-0.77,164],["ANURAS",461,60,3,-1,"00010001100",[27,23,20,3,5,5,4,5,5,13,81],1207.8,-0.25,164],["ASAHIINDIA",462,9,3,4,"00010001100",[27,23,20,3,5,5,4,5,5,13,81],876.55,0.83,164],["BAJAJHFL",463,18,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],86.02,-0.58,164],["BATAINDIA",464,33,3,5,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],696.15,-0.56,164],["BEML",465,46,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],1750.4,-0.34,164],["BIKAJI",466,40,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],641.65,-0.32,164],["BLS",467,42,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],239.4,0.27,164],["BLUESTARCO",468,33,3,3,"00000101100",[27,23,20,5,5,3,4,5,5,122,81],1681.2,-0.6,164],["CHOLAHLDNG",469,18,3,4,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],1534.2,2.05,164],["COCHINSHIP",470,46,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],1423,1.49,164],["CYIENT",471,15,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],847.7,0,164],["DABUR",472,40,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],421.45,-1.09,164],["DOMS",473,40,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],2260,0.22,164],["EIHOTEL",474,42,3,4,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],327,-1.52,164],["EMMVEE",475,46,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,372],317.6,3.3,164],["ENRIN",476,46,3,3,"00000001101",[27,23,20,5,5,5,4,5,5,13,7],3230.8,3.49,164],["ERIS",477,26,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],1354.7,-1.49,164],["FACT",478,60,3,3,"00010001100",[177,23,20,3,5,5,4,5,5,13,81],826.65,1.37,164],["FIRSTCRY",479,42,3,3,"00010001100",[177,23,20,3,5,5,4,5,5,122,81],212.26,0.16,164],["GALLANTT",480,46,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,13,81],614.6,5,164],["GILLETTE",481,40,3,4,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],7624,-1.23,164],["GODFRYPHLP",482,40,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],2133.4,0.08,164],["GODIGIT",483,18,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],254.3,-0.25,164],["GODREJCP",484,40,3,4,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],1070.4,-0.16,164],["GPIL",485,46,3,4,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],254.3,-0.25,164],["HDFCAMC",486,18,3,4,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],2615.8,2.73,164],["HINDUNILVR",487,40,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],2101.3,-0.31,164],["ICICIAMC",488,18,3,4,"00000001101",[177,23,20,5,5,5,4,5,5,122,7],3115.9,2.11,164],["ICICIGI",489,18,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],1623.7,-0.87,164],["INDIACEM",490,202,3,4,"00000101100",[27,23,20,5,5,3,4,5,5,13,81],398,-0.35,164],["INDIAMART",491,42,3,4,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],1799.8,3.25,164],["INOXWIND",492,46,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],78.14,4.21,164],["INTELLECT",493,15,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],719.9,2.04,164],["IRB",494,186,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],20,-1.23,164],["IRCTC",495,42,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],489.8,-0.68,164],["IRFC",496,18,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],89.15,0.26,164],["ITI",497,116,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],276.7,1.19,164],["JAINREC",498,88,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,13,81],348.2,1.47,164],["JBMA",499,9,3,4,"00000001101",[27,23,20,5,5,5,4,5,5,13,7],658.35,-2.96,164],["JKCEMENT",500,202,3,5,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],5444,-2.21,164],["JUBLPHARMA",501,26,3,4,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],935.15,-2.76,164],["KEC",502,186,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],468.95,0.04,164],["LGEINDIA",503,33,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],1490.5,-0.61,164],["LICHSGFIN",504,18,3,4,"10000001100",[0,23,20,5,5,5,4,5,5,13,81],523.1,-3.29,164],["MAZDOCK",505,46,3,5,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],2381.8,2.7,164],["MEESHO",506,42,3,3,"00010001100",[177,23,20,3,5,5,4,5,5,122,372],182.19,0.02,164],["MFSL",507,18,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,13,81],1499,-0.78,164],["MOTILALOFS",508,18,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,13,81],851.95,1.79,164],["NCC",509,186,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],141.08,0.12,164],["OLAELEC",510,9,3,3,"00000001101",[177,23,20,5,5,5,4,5,5,13,7],38.66,2.33,164],["PAGEIND",511,309,3,4,"00010001100",[27,23,20,3,5,5,4,5,5,13,81],40375,-1.73,164],["PATANJALI",512,40,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],354.6,-0.49,164],["POLYMED",513,26,3,3,"00001001100",[27,23,20,5,3,5,4,5,5,13,81],1702,2.09,164],["PWL",514,42,3,3,"00000011100",[177,23,20,5,5,5,12,5,5,122,372],124.89,-0.26,164],["RAILTEL",515,116,3,4,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],284.5,-3.31,164],["RHIM",516,46,3,3,"00010001100",[177,23,20,3,5,5,4,5,5,122,81],388.55,-0.51,164],["RPOWER",517,57,3,3,"00010001100",[177,23,20,3,5,5,4,5,5,122,81],23.41,0.34,164],["RVNL",518,186,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],225.48,1.17,164],["SCHAEFFLER",519,9,3,3,"00000001110",[27,23,20,5,5,5,4,5,5,6,81],4079.2,0.97,164],["SOBHA",520,36,3,4,"01000001100",[27,1,20,5,5,5,4,5,5,122,81],1372.2,2.07,164],["SUZLON",521,46,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,13,81],48.01,1.29,164],["TATACHEM",522,60,3,2,"00010001100",[177,23,20,3,5,5,4,5,5,122,81],673.55,0.48,164],["TATAELXSI",523,15,3,4,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],3672.9,0.4,164],["TECHNOE",524,186,3,4,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],980.3,1.35,164],["TEGA",525,46,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],1485.5,0.55,164],["TEJASNET",526,116,3,3,"00000001101",[177,23,20,5,5,5,4,5,5,13,7],513,1.16,164],["TMCV",527,46,3,3,"00100001100",[27,23,16,5,5,5,4,5,5,122,81],436.8,5.27,164],["TTML",528,116,3,2,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],39.95,0.96,164],["VMM",529,42,3,3,"00010001100",[27,23,20,3,5,5,4,5,5,122,81],107.1,-0.73,164],["WAAREEENER",530,46,3,3,"10000001100",[0,23,20,5,5,5,4,5,5,122,81],2680.2,2.11,164],["WHIRLPOOL",531,33,3,3,"10000001100",[11,23,20,5,5,5,4,5,5,122,81],802.9,-0.35,164],["ABFRL",532,42,2,2,"00000001100",[177,23,20,5,5,5,4,5,5,122,81],60.24,2.21,164],["ABREL",533,36,2,3,"00000001100",[177,23,20,5,5,5,4,5,5,122,81],1418.1,2.9,164],["CROMPTON",534,33,2,2,"00000001100",[177,23,20,5,5,5,4,5,5,13,81],260.2,-0.04,164],["DEVYANI",535,42,2,4,"00000001100",[177,23,20,5,5,5,4,5,5,122,81],114.18,-3.67,164],["HDFCLIFE",536,18,2,2,"00000001100",[27,23,20,5,5,5,4,5,5,122,81],548.5,0.57,164],["JWL",537,46,2,2,"00000001100",[27,23,20,5,5,5,4,5,5,122,81],259.2,-0.06,164],["PINELABS",538,18,2,2,"00000001100",[27,23,20,5,5,5,4,5,5,122,81],138.97,-0.86,164],["SAPPHIRE",539,42,2,4,"00000001100",[177,23,20,5,5,5,4,5,5,122,81],185.11,-5.19,164],["SYNGENE",540,26,2,2,"00000001100",[27,23,20,5,5,5,4,5,5,122,81],385.9,-3.33,164],["TITAGARH",541,46,2,2,"00000001100",[27,23,20,5,5,5,4,5,5,13,81],825.2,0.05,164]]};
+const CN=["Valuation","Earnings Power","Momentum","Price Contraction","Timeframe Alignment","Outperformance","Institutional Candles","Short-term Extension","Long-term Extension","Stage Analysis","Dow Theory (W)"],CS=["VAL","EPS","MOM","CON","TFA","OUT","INS","STX","LTX","STG","DOW"];
+const T=D.t, str=i=>T[i]||'';
+const ST=D.r.map(r=>({sym:r[0],name:str(r[1]),sector:str(r[2]),score:r[3],
+  prev:r[4]<0?null:r[4],bits:r[5],res:r[6].map(str),close:r[7],chg:r[8],cond:str(r[9])}));
+
+/* score → gold ramp: low scores stay neutral, top scores earn the accent */
+function sc(s){
+  if(s>=10)return{bg:'var(--gold)',fg:'#0b1017'};
+  if(s>=9) return{bg:'color-mix(in srgb,var(--gold) 68%,transparent)',fg:'var(--ink)'};
+  if(s>=8) return{bg:'color-mix(in srgb,var(--gold) 40%,transparent)',fg:'var(--ink)'};
+  if(s>=7) return{bg:'color-mix(in srgb,var(--gold) 22%,transparent)',fg:'var(--ink)'};
+  if(s>=5) return{bg:'var(--panel-2)',fg:'var(--dim)'};
+  return{bg:'transparent',fg:'var(--dimmer)'};
+}
+const fmtN=n=>n==null?'—':n>=1e7?(n/1e7).toFixed(1)+'Cr':n>=1e5?(n/1e5).toFixed(1)+'L':n>=1e3?(n/1e3).toFixed(0)+'k':String(n);
+const fmtP=n=>n==null?'—':n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+
+document.getElementById('dstamp').textContent=D.d;
+document.getElementById('s-n').textContent=ST.length;
+document.getElementById('s-elite').textContent=ST.filter(s=>s.score>=9).length;
+const sorted=[...ST].map(s=>s.score).sort((a,b)=>a-b);
+document.getElementById('s-med').textContent=sorted[Math.floor(sorted.length/2)];
+document.getElementById('s-avg').textContent=(sorted.reduce((a,b)=>a+b,0)/sorted.length).toFixed(1);
+if(D.f)document.getElementById('failnote').textContent=' '+D.f+' symbol(s) did not return a score this session.';
+
+/* breadth */
+const bands=[{k:'9–11',lo:9,c:'var(--gold)'},{k:'7–8',lo:7,c:'color-mix(in srgb,var(--gold) 45%,transparent)'},
+  {k:'5–6',lo:5,c:'var(--dim)'},{k:'0–4',lo:0,c:'var(--panel-2)'}];
+let bh='',bk='';
+bands.forEach(b=>{
+  const n=ST.filter(s=>s.score>=b.lo&&(b.lo===9||s.score<bands[bands.indexOf(b)-1].lo)).length;
+  if(n)bh+='<div style="width:'+(n/ST.length*100)+'%;background:'+b.c+'" title="'+b.k+': '+n+' stocks"></div>';
+  bk+='<span><i class="dot" style="background:'+b.c+'"></i>'+b.k+' · '+n+'</span>';
+});
+document.getElementById('breadth').innerHTML=bh;
+document.getElementById('bkey').innerHTML=bk;
+
+/* movers */
+const withPrev=ST.filter(s=>s.prev!=null&&s.score!==s.prev);
+const ups=[...withPrev].filter(s=>s.score>s.prev).sort((a,b)=>(b.score-b.prev)-(a.score-a.prev)||b.score-a.score).slice(0,5);
+const dns=[...withPrev].filter(s=>s.score<s.prev).sort((a,b)=>(a.score-a.prev)-(b.score-b.prev)||a.score-b.score).slice(0,5);
+const mvRow=s=>{const d=s.score-s.prev;return '<div class="mv"><b>'+s.sym+'</b><span class="d '+(d>0?'up':'down')+'">'+
+  s.prev+' → '+s.score+' <span style="opacity:.8">'+(d>0?'▲':'▼')+Math.abs(d)+'</span></span></div>';};
+document.getElementById('movers').innerHTML = withPrev.length
+  ? (ups.length?'<div class="lbl" style="margin-bottom:3px">Upgrades</div>'+ups.map(mvRow).join(''):'')+
+    (dns.length?'<div class="lbl" style="margin:11px 0 3px">Downgrades</div>'+dns.map(mvRow).join(''):'')
+  : '<p class="muted">No prior session to compare yet — deltas appear from the next scan.</p>';
+if(D.p)document.getElementById('vsdate').textContent='— vs '+D.p;
+
+/* condition pass rates */
+const rates=CN.map((c,i)=>({c,short:CS[i],i,n:ST.filter(s=>s.bits[i]==='1').length}));
+document.getElementById('crates').innerHTML=[...rates].sort((a,b)=>b.n-a.n).map(r=>{
+  const p=Math.round(r.n/ST.length*100);
+  return '<div class="crate"><span class="nm" title="'+r.c+'">'+r.short+'</span>'+
+    '<span class="bar"><i style="width:'+p+'%"></i></span><span class="pc">'+p+'%</span></div>';
+}).join('');
+
+/* legend — passing values derived from the scan itself, not assumed */
+document.getElementById('legend').innerHTML=CN.map((c,i)=>{
+  const passVals=[...new Set(ST.filter(s=>s.bits[i]==='1').map(s=>s.res[i]).filter(Boolean))];
+  const n=ST.filter(s=>s.bits[i]==='1').length;
+  const pct=Math.round(n/ST.length*100);
+  let shown=passVals.slice(0,3).join(', ')||'—';
+  if(passVals.length>3)shown+=' +'+(passVals.length-3);
+  return '<div class="lg"><span class="code">'+CS[i]+'</span><span class="txt">'+
+    '<span class="full">'+c+'</span>'+
+    '<span class="pass" title="'+passVals.join(', ').replace(/"/g,'&quot;')+'">passes on <b>'+shown+'</b></span>'+
+    '</span><span class="rt">'+pct+'%</span></div>';
+}).join('');
+
+/* sectors */
+const bySec={};
+ST.forEach(s=>{(bySec[s.sector]=bySec[s.sector]||[]).push(s.score)});
+const secs=Object.entries(bySec).map(([k,v])=>({k,n:v.length,m:v.reduce((a,b)=>a+b,0)/v.length}))
+  .sort((a,b)=>b.m-a.m);
+const mx=Math.max(...secs.map(s=>s.m)),mn=Math.min(...secs.map(s=>s.m));
+document.getElementById('sectors').innerHTML=secs.map(s=>{
+  const t=(s.m-mn)/((mx-mn)||1), thin=s.n<5;
+  return '<button class="stile" data-sec="'+s.k.replace(/"/g,'&quot;')+'" aria-pressed="false" '+
+    'style="'+(thin?'opacity:.5;':'')+'background:color-mix(in srgb,var(--gold) '+(t*30).toFixed(0)+'%,var(--panel-2))">'+
+    '<span class="sn" title="'+s.k+'">'+s.k+'</span><span class="sv">'+s.m.toFixed(1)+'</span> '+
+    '<span class="sc">·'+s.n+'</span></button>';
+}).join('');
+
+/* table */
+const cols=[{k:'sym',t:'Symbol'},{k:'name',t:'Company',c:'nm'},{k:'score',t:'Score'},{k:'delta',t:'Δ'}];
+let head='<th data-s="sym">Symbol</th><th class="nm" data-s="name">Company</th>'+
+  '<th data-s="score">Score</th><th data-s="delta">Δ 1D</th>';
+CN.forEach((c,i)=>{head+='<th class="cx'+(i===0?' matdiv':'')+'" data-c="'+i+'" title="'+c+' — click to filter to passers">'+CS[i]+'</th>'});
+head+='<th class="matdiv" data-s="close">Close</th><th data-s="chg">Chg%</th><th data-s="sector">Sector</th>';
+document.getElementById('head').innerHTML=head;
+
+let state={q:'',band:'all',sec:null,near:false,up:false,conds:new Set(),sort:'score',dir:-1};
+
+function view(){
+  let r=ST.filter(s=>{
+    if(state.band!=='all'){const b=+state.band;
+      if(b===9&&s.score<9)return false;
+      if(b===7&&(s.score<7||s.score>8))return false;
+      if(b===5&&(s.score<5||s.score>6))return false;
+      if(b===0&&s.score>=5)return false;}
+    if(state.sec&&s.sector!==state.sec)return false;
+    if(state.near&&s.score!==10)return false;
+    if(state.up&&!(s.prev!=null&&s.score>s.prev))return false;
+    for(const i of state.conds)if(s.bits[i]!=='1')return false;
+    if(state.q){const q=state.q.toLowerCase();
+      if(!s.sym.toLowerCase().includes(q)&&!s.name.toLowerCase().includes(q))return false;}
+    return true;
+  });
+  const k=state.sort,d=state.dir;
+  r.sort((a,b)=>{
+    let x,y;
+    if(k==='delta'){x=a.prev==null?-99:a.score-a.prev;y=b.prev==null?-99:b.score-b.prev;}
+    else{x=a[k];y=b[k];}
+    if(typeof x==='string')return d*x.localeCompare(y);
+    return d*((x==null?-1e9:x)-(y==null?-1e9:y));
+  });
+  return r;
+}
+
+function render(){
+  const r=view();
+  document.getElementById('count').textContent=r.length+' / '+ST.length+' stocks';
+  document.getElementById('empty').hidden=r.length>0;
+  document.getElementById('body').innerHTML=r.map(s=>{
+    const c=sc(s.score);
+    const d=s.prev==null?null:s.score-s.prev;
+    let cells='';
+    for(let i=0;i<11;i++){
+      const p=s.bits[i]==='1';
+      cells+='<td class="cx'+(i===0?' matdiv':'')+(state.conds.has(i)?' on':'')+'">'+
+        '<i class="'+(p?'p':'f')+'" title="'+CN[i]+': '+(s.res[i]||(p?'PASS':'FAIL'))+'"></i></td>';
+    }
+    return '<tr><td class="sym"><a href="https://www.tradingview.com/chart/?symbol=NSE%3A'+
+      encodeURIComponent(s.sym.replace(/[&-]/g,'_'))+'" target="_blank" rel="noopener">'+s.sym+'</a></td>'+
+      '<td class="nm">'+s.name+'</td>'+
+      '<td><span class="score" style="background:'+c.bg+';color:'+c.fg+'">'+s.score+'</span></td>'+
+      '<td class="delta '+(d>0?'up':d<0?'down':'')+'" style="'+(d?'':'color:var(--dimmer)')+'">'+
+        (d==null?'·':d===0?'—':(d>0?'+'+d:d))+'</td>'+
+      cells+
+      '<td class="num matdiv">'+fmtP(s.close)+'</td>'+
+      '<td class="num '+(s.chg>0?'up':s.chg<0?'down':'')+'">'+(s.chg==null?'—':(s.chg>0?'+':'')+s.chg.toFixed(2))+'</td>'+
+      '<td class="nm" style="font-size:11.5px">'+s.sector+'</td></tr>';
+  }).join('');
+  document.querySelectorAll('th.cx').forEach(th=>{
+    th.classList.toggle('on',state.conds.has(+th.dataset.c));
+  });
+}
+
+/* interactions */
+document.getElementById('q').addEventListener('input',e=>{state.q=e.target.value;render()});
+document.querySelectorAll('.chip[data-band]').forEach(b=>b.addEventListener('click',()=>{
+  state.band=b.dataset.band;
+  document.querySelectorAll('.chip[data-band]').forEach(x=>x.setAttribute('aria-pressed',x===b));
+  render();
+}));
+const tglBtn=(btn,key)=>btn.addEventListener('click',()=>{
+  state[key]=!state[key];btn.setAttribute('aria-pressed',state[key]);render();
+});
+tglBtn(document.querySelector('.chip[data-near]'),'near');
+tglBtn(document.querySelector('.chip[data-up]'),'up');
+/* sector: heat-map tiles and the dropdown drive the same state */
+const secSel=document.getElementById('secsel');
+secSel.innerHTML='<option value="">ALL SECTORS</option>'+
+  secs.map(s=>'<option value="'+s.k.replace(/"/g,'&quot;')+'">'+s.k.toUpperCase()+' ('+s.n+')</option>').join('');
+function setSector(s){
+  state.sec=s||null;
+  document.querySelectorAll('.stile').forEach(x=>x.setAttribute('aria-pressed',x.dataset.sec===state.sec));
+  secSel.value=state.sec||'';
+  secSel.classList.toggle('on',!!state.sec);
+  render();
+}
+document.querySelectorAll('.stile').forEach(t=>t.addEventListener('click',()=>{
+  setSector(state.sec===t.dataset.sec?null:t.dataset.sec);
+}));
+secSel.addEventListener('change',()=>setSector(secSel.value));
+document.getElementById('head').addEventListener('click',e=>{
+  const th=e.target.closest('th');if(!th)return;
+  if(th.dataset.c!=null){const i=+th.dataset.c;
+    state.conds.has(i)?state.conds.delete(i):state.conds.add(i);render();return;}
+  if(th.dataset.s){const k=th.dataset.s;
+    state.dir=state.sort===k?-state.dir:(k==='sym'||k==='name'||k==='sector'?1:-1);
+    state.sort=k;render();}
+});
+document.getElementById('csv').addEventListener('click',()=>{
+  const r=view();
+  let c='Symbol,Company,Sector,Score,Prev,Delta,'+CS.join(',')+',Close,ChgPct\n';
+  r.forEach(s=>{c+=[s.sym,'"'+s.name+'"','"'+s.sector+'"',s.score,s.prev??'',
+    s.prev==null?'':s.score-s.prev,...s.bits.split('').map(b=>b==='1'?'PASS':'FAIL'),
+    s.close??'',s.chg??''].join(',')+'\n';});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));
+  a.download='rpci_'+D.d+'.csv';a.click();
+});
+const root=document.documentElement,tt=document.getElementById('tt');
+tt.addEventListener('click',()=>{
+  const cur=root.dataset.theme||(matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light');
+  root.dataset.theme=cur==='dark'?'light':'dark';
+});
+addEventListener('keydown',e=>{
+  if(e.key==='/'&&document.activeElement.id!=='q'){e.preventDefault();document.getElementById('q').focus();}
+  if(e.key==='Escape'&&document.activeElement.id==='q'){document.getElementById('q').blur();}
+});
+render();
+</script>
