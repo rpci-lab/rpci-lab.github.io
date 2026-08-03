@@ -210,8 +210,9 @@ footer b{color:var(--dim);font-weight:600}
     <div class="statrow">
       <div class="stat"><div class="lbl">Scanned</div><div class="v" id="s-n"></div></div>
       <div class="stat"><div class="lbl">Score 9+</div><div class="v gold" id="s-elite"></div></div>
+      <div class="stat"><div class="lbl">One away</div><div class="v" id="s-near"></div></div>
+      <div class="stat"><div class="lbl">Improved</div><div class="v" id="s-imp"></div></div>
       <div class="stat"><div class="lbl">Median</div><div class="v" id="s-med"></div></div>
-      <div class="stat"><div class="lbl">Avg</div><div class="v" id="s-avg"></div></div>
     </div>
   </div>
 
@@ -296,7 +297,11 @@ document.getElementById('s-n').textContent=ST.length;
 document.getElementById('s-elite').textContent=ST.filter(s=>s.score>=9).length;
 const sorted=[...ST].map(s=>s.score).sort((a,b)=>a-b);
 document.getElementById('s-med').textContent=sorted[Math.floor(sorted.length/2)];
-document.getElementById('s-avg').textContent=(sorted.reduce((a,b)=>a+b,0)/sorted.length).toFixed(1);
+document.getElementById('s-near').textContent=ST.filter(s=>s.score===10).length;
+document.getElementById('s-imp').textContent=ST.filter(s=>s.prev!=null&&s.score>s.prev).length;
+/* ?theme=dark|light forces a theme (used for the daily screenshot, and shareable) */
+{const t=new URLSearchParams(location.search).get('theme');
+ if(t==='dark'||t==='light')document.documentElement.dataset.theme=t;}
 if(D.f)document.getElementById('failnote').textContent=' '+D.f+' symbol(s) did not return a score this session.';
 
 /* breadth */
