@@ -9,12 +9,12 @@
 <meta property="og:title" content="RPCI Lab — NSE Daily Screen">
 <meta property="og:description" content="2395 NSE-listed stocks scored 0–11 on the RPCI conditions · 91 strongly favourable, 242 at 8+ · updated 2026-08-04">
 <meta property="og:url" content="https://rpci-lab.github.io/">
-<meta property="og:image" content="https://rpci-lab.github.io/preview.png?v=1785865655000">
+<meta property="og:image" content="https://rpci-lab.github.io/preview.png?v=1785866880000">
 <meta property="og:image:width" content="1400">
 <meta property="og:image:height" content="1180">
-<meta name="rpci:stamp" content="1785865655000">
+<meta name="rpci:stamp" content="1785866880000">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://rpci-lab.github.io/preview.png?v=1785865655000">
+<meta name="twitter:image" content="https://rpci-lab.github.io/preview.png?v=1785866880000">
 <title>RPCI Lab — NSE Daily Screen</title>
 <style>
 :root{
@@ -138,6 +138,11 @@ button,select,input{font:inherit;color:inherit}
 .chip[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#0b1017;font-weight:600}
 .spacer{flex:1}
 .count{font-family:var(--mono);font-size:11.5px;color:var(--dim);white-space:nowrap}
+.scopebar{display:flex;flex-wrap:wrap;gap:7px;align-items:center;padding:9px 0 2px;
+  border-bottom:1px solid var(--line);margin-bottom:14px}
+.scopechip{font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;background:var(--gold-soft);
+  border:1px solid var(--gold);color:var(--ink);border-radius:4px;padding:2px 7px}
+.scopen{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-left:auto}
 
 /* ── matrix table ─────────────────────────── */
 .tblwrap{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--panel);
@@ -224,6 +229,25 @@ footer b{color:var(--dim);font-weight:600}
   </div>
 </header>
 
+<div class="tools">
+  <input id="q" placeholder="Search symbol or company…" autocomplete="off">
+  <select id="idxsel" aria-label="Filter by NSE index"><option value="">ALL NSE</option></select>
+  <select id="secsel" aria-label="Filter by sector"><option value="">ALL SECTORS</option></select>
+  <button class="chip" data-band="all" aria-pressed="true">ALL</button>
+  <button class="chip" data-band="9">9–11</button>
+  <button class="chip" data-band="7">7–8</button>
+  <button class="chip" data-band="5">5–6</button>
+  <button class="chip" data-band="0">&lt;5</button>
+  <button class="chip" data-near="1" title="Failing only one condition — one flip from a 10+">NEAR MISS</button>
+  <button class="chip" data-up="1" title="Score improved since the previous session">UPGRADED</button>
+  <button class="chip" id="condclear" hidden></button>
+  <button class="chip" id="resetall" hidden>RESET ALL</button>
+  <span class="spacer"></span>
+  <span class="count" id="count"></span>
+  <button class="chip" id="csv">EXPORT CSV</button>
+</div>
+<div class="scopebar" id="scopebar" hidden></div>
+
 <div class="grid g3">
   <div class="panel">
     <h2>Score Distribution</h2>
@@ -257,24 +281,8 @@ footer b{color:var(--dim);font-weight:600}
 <div class="panel" style="margin-bottom:14px">
   <h2>The Eleven Conditions
     <span style="color:var(--dimmer);letter-spacing:0">— click any to filter · click again for FAIL</span>
-    <button class="chip" id="condclear" style="float:right;margin-top:-4px" hidden></button></h2>
+    </h2>
   <div class="legend" id="legend"></div>
-</div>
-
-<div class="tools">
-  <input id="q" placeholder="Search symbol or company…" autocomplete="off">
-  <select id="idxsel" aria-label="Filter by NSE index"><option value="">ALL NSE</option></select>
-  <select id="secsel" aria-label="Filter by sector"><option value="">ALL SECTORS</option></select>
-  <button class="chip" data-band="all" aria-pressed="true">ALL</button>
-  <button class="chip" data-band="9">9–11</button>
-  <button class="chip" data-band="7">7–8</button>
-  <button class="chip" data-band="5">5–6</button>
-  <button class="chip" data-band="0">&lt;5</button>
-  <button class="chip" data-near="1" title="Failing only one condition — one flip from a 10+">NEAR MISS</button>
-  <button class="chip" data-up="1" title="Score improved since the previous session">UPGRADED</button>
-  <span class="spacer"></span>
-  <span class="count" id="count"></span>
-  <button class="chip" id="csv">EXPORT CSV</button>
 </div>
 
 <div class="tblwrap">
@@ -324,12 +332,15 @@ const fmtN=n=>n==null?'—':n>=1e7?(n/1e7).toFixed(1)+'Cr':n>=1e5?(n/1e5).toFixe
 const fmtP=n=>n==null?'—':n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
 
 document.getElementById('dstamp').textContent=D.d;
-document.getElementById('s-n').textContent=ST.length;
-document.getElementById('s-elite').textContent=ST.filter(s=>s.score>=9).length;
-const sorted=[...ST].map(s=>s.score).sort((a,b)=>a-b);
-document.getElementById('s-med').textContent=sorted[Math.floor(sorted.length/2)];
-document.getElementById('s-near').textContent=ST.filter(s=>s.score===10).length;
-document.getElementById('s-imp').textContent=ST.filter(s=>s.prev!=null&&s.score>s.prev).length;
+/* every panel below is recomputed from the CURRENT filter, not the whole universe */
+function paintStats(R){
+  document.getElementById('s-n').textContent=R.length;
+  document.getElementById('s-elite').textContent=R.filter(s=>s.score>=9).length;
+  const so=R.map(s=>s.score).sort((a,b)=>a-b);
+  document.getElementById('s-med').textContent=so.length?so[Math.floor(so.length/2)]:'—';
+  document.getElementById('s-near').textContent=R.filter(s=>s.score===10).length;
+  document.getElementById('s-imp').textContent=R.filter(s=>s.prev!=null&&s.score>s.prev).length;
+}
 /* ?theme=dark|light forces a theme (used for the daily screenshot, and shareable) */
 {const t=new URLSearchParams(location.search).get('theme');
  if(t==='dark'||t==='light')document.documentElement.dataset.theme=t;}
@@ -338,40 +349,48 @@ if(D.f)document.getElementById('failnote').textContent=' '+D.f+' symbol(s) did n
 /* breadth */
 const bands=[{k:'9–11',lo:9,c:'var(--gold)'},{k:'7–8',lo:7,c:'color-mix(in srgb,var(--gold) 45%,transparent)'},
   {k:'5–6',lo:5,c:'var(--dim)'},{k:'0–4',lo:0,c:'var(--panel-2)'}];
-let bh='',bk='';
-bands.forEach(b=>{
-  const n=ST.filter(s=>s.score>=b.lo&&(b.lo===9||s.score<bands[bands.indexOf(b)-1].lo)).length;
-  if(n)bh+='<div style="width:'+(n/ST.length*100)+'%;background:'+b.c+'" title="'+b.k+': '+n+' stocks"></div>';
-  bk+='<span><i class="dot" style="background:'+b.c+'"></i>'+b.k+' · '+n+'</span>';
-});
-document.getElementById('breadth').innerHTML=bh;
-document.getElementById('bkey').innerHTML=bk;
+function paintBreadth(R){
+  let bh='',bk='';
+  bands.forEach((b,bi)=>{
+    const n=R.filter(s=>s.score>=b.lo&&(bi===0||s.score<bands[bi-1].lo)).length;
+    if(n&&R.length)bh+='<div style="width:'+(n/R.length*100)+'%;background:'+b.c+'" title="'+b.k+': '+n+' stocks"></div>';
+    bk+='<span><i class="dot" style="background:'+b.c+'"></i>'+b.k+' · '+n+'</span>';
+  });
+  document.getElementById('breadth').innerHTML=bh;
+  document.getElementById('bkey').innerHTML=bk;
+}
 
 /* movers */
-const withPrev=ST.filter(s=>s.prev!=null&&s.score!==s.prev);
-const ups=[...withPrev].filter(s=>s.score>s.prev).sort((a,b)=>(b.score-b.prev)-(a.score-a.prev)||b.score-a.score).slice(0,5);
-const dns=[...withPrev].filter(s=>s.score<s.prev).sort((a,b)=>(a.score-a.prev)-(b.score-b.prev)||a.score-b.score).slice(0,5);
 const mvRow=s=>{const d=s.score-s.prev;return '<div class="mv"><b>'+s.sym+'</b><span class="d '+(d>0?'up':'down')+'">'+
   s.prev+' → '+s.score+' <span style="opacity:.8">'+(d>0?'▲':'▼')+Math.abs(d)+'</span></span></div>';};
-document.getElementById('movers').innerHTML = withPrev.length
-  ? (ups.length?'<div class="lbl" style="margin-bottom:3px">Upgrades</div>'+ups.map(mvRow).join(''):'')+
-    (dns.length?'<div class="lbl" style="margin:11px 0 3px">Downgrades</div>'+dns.map(mvRow).join(''):'')
-  : '<p class="muted">No prior session to compare yet — deltas appear from the next scan.</p>';
+function paintMovers(R){
+  const wp=R.filter(s=>s.prev!=null&&s.score!==s.prev);
+  const ups=[...wp].filter(s=>s.score>s.prev).sort((a,b)=>(b.score-b.prev)-(a.score-a.prev)||b.score-a.score).slice(0,5);
+  const dns=[...wp].filter(s=>s.score<s.prev).sort((a,b)=>(a.score-a.prev)-(b.score-b.prev)||a.score-b.score).slice(0,5);
+  document.getElementById('movers').innerHTML = wp.length
+    ? (ups.length?'<div class="lbl" style="margin-bottom:3px">Upgrades</div>'+ups.map(mvRow).join(''):'')+
+      (dns.length?'<div class="lbl" style="margin:11px 0 3px">Downgrades</div>'+dns.map(mvRow).join(''):'')
+    : '<p class="muted">No score changes in this selection.</p>';
+}
 if(D.p)document.getElementById('vsdate').textContent='— vs '+D.p;
 
 /* condition pass rates */
-const rates=CN.map((c,i)=>({c,short:CS[i],i,n:ST.filter(s=>s.bits[i]==='1').length}));
-document.getElementById('crates').innerHTML=[...rates].sort((a,b)=>b.n-a.n).map(r=>{
-  const p=Math.round(r.n/ST.length*100);
-  return '<div class="crate"><span class="nm" title="'+r.c+'">'+r.short+'</span>'+
-    '<span class="bar"><i style="width:'+p+'%"></i></span><span class="pc">'+p+'%</span></div>';
-}).join('');
+function paintRates(R){
+  const rates=CN.map((c,i)=>({c,short:CS[i],i,n:R.filter(s=>s.bits[i]==='1').length}));
+  document.getElementById('crates').innerHTML=[...rates].sort((a,b)=>b.n-a.n).map(r=>{
+    const p=R.length?Math.round(r.n/R.length*100):0;
+    return '<div class="crate"><span class="nm" title="'+r.c+'">'+r.short+'</span>'+
+      '<span class="bar"><i style="width:'+p+'%"></i></span><span class="pc">'+p+'%</span></div>';
+  }).join('');
+}
 
 /* legend — passing values derived from the scan itself, not assumed */
-function legendHTML(){return CN.map((c,i)=>{
-  const passVals=[...new Set(ST.filter(s=>s.bits[i]==='1').map(s=>s.res[i]).filter(Boolean))];
-  const n=ST.filter(s=>s.bits[i]==='1').length;
-  const pct=Math.round(n/ST.length*100);
+function legendHTML(){
+ const R=scope('conds');            // keep all 11 usable while some are active
+ return CN.map((c,i)=>{
+  const passVals=[...new Set(R.filter(s=>s.bits[i]==='1').map(s=>s.res[i]).filter(Boolean))];
+  const n=R.filter(s=>s.bits[i]==='1').length;
+  const pct=R.length?Math.round(n/R.length*100):0;
   let shown=passVals.slice(0,3).join(', ')||'—';
   if(passVals.length>3)shown+=' +'+(passVals.length-3);
   const st=state.conds.get(i);
@@ -387,19 +406,27 @@ function legendHTML(){return CN.map((c,i)=>{
 }).join('');}
 /* legend is painted by render() - it reads state, which is declared further down */
 
-/* sectors */
-const bySec={};
-ST.forEach(s=>{(bySec[s.sector]=bySec[s.sector]||[]).push(s.score)});
-const secs=Object.entries(bySec).map(([k,v])=>({k,n:v.length,m:v.reduce((a,b)=>a+b,0)/v.length}))
-  .sort((a,b)=>b.m-a.m);
-const mx=Math.max(...secs.map(s=>s.m)),mn=Math.min(...secs.map(s=>s.m));
-document.getElementById('sectors').innerHTML=secs.map(s=>{
-  const t=(s.m-mn)/((mx-mn)||1), thin=s.n<5;
-  return '<button class="stile" data-sec="'+s.k.replace(/"/g,'&quot;')+'" aria-pressed="false" '+
-    'style="'+(thin?'opacity:.5;':'')+'background:color-mix(in srgb,var(--gold) '+(t*30).toFixed(0)+'%,var(--panel-2))">'+
-    '<span class="sn" title="'+s.k+'">'+s.k+'</span><span class="sv">'+s.m.toFixed(1)+'</span> '+
-    '<span class="sc">·'+s.n+'</span></button>';
-}).join('');
+/* sectors - computed with the sector filter itself skipped, so the other
+   sectors stay visible and switchable while one is selected */
+let secs=[];
+function paintSectors(){
+  const R=scope('sec');
+  const bySec={};
+  R.forEach(s=>{(bySec[s.sector]=bySec[s.sector]||[]).push(s.score)});
+  secs=Object.entries(bySec).map(([k,v])=>({k,n:v.length,m:v.reduce((a,b)=>a+b,0)/v.length}))
+    .sort((a,b)=>b.m-a.m);
+  if(!secs.length){document.getElementById('sectors').innerHTML=
+    '<p class="muted">No stocks in this selection.</p>';return;}
+  const mx=Math.max(...secs.map(s=>s.m)),mn=Math.min(...secs.map(s=>s.m));
+  document.getElementById('sectors').innerHTML=secs.map(s=>{
+    const t=(s.m-mn)/((mx-mn)||1), thin=s.n<5;
+    return '<button class="stile" data-sec="'+s.k.replace(/"/g,'&quot;')+
+      '" aria-pressed="'+(state.sec===s.k)+'" '+
+      'style="'+(thin?'opacity:.5;':'')+'background:color-mix(in srgb,var(--gold) '+(t*30).toFixed(0)+'%,var(--panel-2))">'+
+      '<span class="sn" title="'+s.k+'">'+s.k+'</span><span class="sv">'+s.m.toFixed(1)+'</span> '+
+      '<span class="sc">·'+s.n+'</span></button>';
+  }).join('');
+}
 
 /* table */
 const cols=[{k:'sym',t:'Symbol'},{k:'name',t:'Company',c:'nm'},{k:'score',t:'Score'},{k:'delta',t:'Δ'}];
@@ -414,30 +441,35 @@ let state={q:'',band:'all',sec:null,ex:null,idx:null,near:false,up:false,conds:n
 const PAGE=250;          // rows rendered at once - the universe is ~2400 names
 let shown=PAGE;
 
+/* skip: a dimension to ignore, so a panel that drives a filter can still show
+   its other options (faceted search). e.g. the sector tiles are computed with
+   'sec' skipped, otherwise every other sector would read zero. */
+function matches(s,skip){
+  if(skip!=='band'&&state.band!=='all'){const b=+state.band;
+    if(b===9&&s.score<9)return false;
+    if(b===7&&(s.score<7||s.score>8))return false;
+    if(b===5&&(s.score<5||s.score>6))return false;
+    if(b===0&&s.score>=5)return false;}
+  if(skip!=='sec'&&state.sec&&s.sector!==state.sec)return false;
+  if(state.ex&&s.ex!==state.ex)return false;
+  if(skip!=='idx'&&state.idx){
+    if(state.idx==='NONE'){ if(s.idx)return false; }
+    else if(!('|'+s.idx+'|').includes('|'+state.idx+'|'))return false;
+  }
+  if(state.near&&s.score!==10)return false;
+  if(state.up&&!(s.prev!=null&&s.score>s.prev))return false;
+  if(skip!=='conds')for(const [i,want] of state.conds){
+    const pass=s.bits[i]==='1';
+    if(want==='p'&&!pass)return false;
+    if(want==='f'&&pass)return false;
+  }
+  if(state.q){const q=state.q.toLowerCase();
+    if(!s.sym.toLowerCase().includes(q)&&!s.name.toLowerCase().includes(q))return false;}
+  return true;
+}
+const scope=skip=>ST.filter(s=>matches(s,skip));
 function view(){
-  let r=ST.filter(s=>{
-    if(state.band!=='all'){const b=+state.band;
-      if(b===9&&s.score<9)return false;
-      if(b===7&&(s.score<7||s.score>8))return false;
-      if(b===5&&(s.score<5||s.score>6))return false;
-      if(b===0&&s.score>=5)return false;}
-    if(state.sec&&s.sector!==state.sec)return false;
-    if(state.ex&&s.ex!==state.ex)return false;
-    if(state.idx){
-      if(state.idx==='NONE'){ if(s.idx)return false; }
-      else if(!('|'+s.idx+'|').includes('|'+state.idx+'|'))return false;
-    }
-    if(state.near&&s.score!==10)return false;
-    if(state.up&&!(s.prev!=null&&s.score>s.prev))return false;
-    for(const [i,want] of state.conds){
-      const pass=s.bits[i]==='1';
-      if(want==='p'&&!pass)return false;
-      if(want==='f'&&pass)return false;
-    }
-    if(state.q){const q=state.q.toLowerCase();
-      if(!s.sym.toLowerCase().includes(q)&&!s.name.toLowerCase().includes(q))return false;}
-    return true;
-  });
+  let r=scope();
   const k=state.sort,d=state.dir;
   r.sort((a,b)=>{
     let x,y;
@@ -484,11 +516,31 @@ function render(reset){
   document.querySelectorAll('th.cx').forEach(th=>{
     th.classList.toggle('on',state.conds.has(+th.dataset.c));
   });
+  /* every panel reflects the current filter */
+  paintStats(all); paintBreadth(all); paintMovers(all); paintRates(all);
+  paintSectors();
   document.getElementById('legend').innerHTML=legendHTML();
+
   const nc=state.conds.size;
   const cc=document.getElementById('condclear');
   cc.hidden=nc===0;
-  cc.textContent='CLEAR '+nc+' CONDITION FILTER'+(nc===1?'':'S');
+  cc.textContent='CLEAR '+nc+' CONDITION'+(nc===1?'':'S');
+
+  /* breadcrumb of what is currently narrowing the view */
+  const bits=[];
+  if(state.idx)bits.push((IDX.find(x=>x[0]===state.idx)||[,'Outside any index'])[1]);
+  if(state.sec)bits.push(state.sec);
+  if(state.band!=='all')bits.push({'9':'score 9–11','7':'score 7–8','5':'score 5–6','0':'score <5'}[state.band]);
+  if(state.near)bits.push('near miss');
+  if(state.up)bits.push('upgraded');
+  if(state.q)bits.push('“'+state.q+'”');
+  for(const [i,w] of state.conds)bits.push(CS[i]+' '+(w==='p'?'PASS':'FAIL'));
+  const sb=document.getElementById('scopebar');
+  sb.hidden=bits.length===0;
+  sb.innerHTML=bits.length?'<span class="lbl">Showing</span> '+
+    bits.map(b=>'<span class="scopechip">'+b+'</span>').join('')+
+    '<span class="scopen">'+all.length+' stocks · all panels below reflect this</span>':'';
+  document.getElementById('resetall').hidden=bits.length===0;
 }
 
 /* interactions */
@@ -505,18 +557,25 @@ tglBtn(document.querySelector('.chip[data-near]'),'near');
 tglBtn(document.querySelector('.chip[data-up]'),'up');
 /* sector: heat-map tiles and the dropdown drive the same state */
 const secSel=document.getElementById('secsel');
-secSel.innerHTML='<option value="">ALL SECTORS</option>'+
-  secs.map(s=>'<option value="'+s.k.replace(/"/g,'&quot;')+'">'+s.k.toUpperCase()+' ('+s.n+')</option>').join('');
+/* built from the whole universe, not the filtered set - the option must exist
+   for any sector the user might switch to, or setting .value silently fails */
+{
+  const all={};
+  ST.forEach(s=>{all[s.sector]=(all[s.sector]||0)+1;});
+  secSel.innerHTML='<option value="">ALL SECTORS</option>'+
+    Object.entries(all).sort((a,b)=>b[1]-a[1])
+      .map(([k,n])=>'<option value="'+k.replace(/"/g,'&quot;')+'">'+k.toUpperCase()+' ('+n+')</option>').join('');
+}
 function setSector(s){
   state.sec=s||null;
-  document.querySelectorAll('.stile').forEach(x=>x.setAttribute('aria-pressed',x.dataset.sec===state.sec));
   secSel.value=state.sec||'';
   secSel.classList.toggle('on',!!state.sec);
-  render();
+  render();                       // paintSectors() re-marks the pressed tile
 }
-document.querySelectorAll('.stile').forEach(t=>t.addEventListener('click',()=>{
-  setSector(state.sec===t.dataset.sec?null:t.dataset.sec);
-}));
+document.getElementById('sectors').addEventListener('click',e=>{
+  const t=e.target.closest('.stile');
+  if(t)setSector(state.sec===t.dataset.sec?null:t.dataset.sec);
+});
 secSel.addEventListener('change',()=>setSector(secSel.value));
 document.getElementById('more').addEventListener('click',()=>{ shown+=PAGE; render(false); });
 
@@ -548,6 +607,18 @@ const idxSel=document.getElementById('idxsel');
 }
 idxSel.addEventListener('change',()=>{
   state.idx=idxSel.value||null; idxSel.classList.toggle('on',!!state.idx); render();
+});
+
+document.getElementById('resetall').addEventListener('click',()=>{
+  state.q='';state.band='all';state.sec=null;state.idx=null;state.near=false;state.up=false;
+  state.conds.clear();
+  document.getElementById('q').value='';
+  idxSel.value='';idxSel.classList.remove('on');
+  secSel.value='';secSel.classList.remove('on');
+  document.querySelectorAll('.chip[data-band]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.band==='all'));
+  document.querySelector('.chip[data-near]').setAttribute('aria-pressed','false');
+  document.querySelector('.chip[data-up]').setAttribute('aria-pressed','false');
+  render();
 });
 document.getElementById('head').addEventListener('click',e=>{
   const th=e.target.closest('th');if(!th)return;
