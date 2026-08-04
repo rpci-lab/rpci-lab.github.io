@@ -9,12 +9,12 @@
 <meta property="og:title" content="RPCI Lab — NSE Daily Screen">
 <meta property="og:description" content="2374 NSE-listed stocks scored 0–11 on the RPCI conditions · 94 strongly favourable, 251 at 8+ · updated 2026-08-04">
 <meta property="og:url" content="https://rpci-lab.github.io/">
-<meta property="og:image" content="https://rpci-lab.github.io/preview.png?v=1785818864000">
+<meta property="og:image" content="https://rpci-lab.github.io/preview.png?v=1785819189000">
 <meta property="og:image:width" content="1400">
 <meta property="og:image:height" content="1180">
-<meta name="rpci:stamp" content="1785818864000">
+<meta name="rpci:stamp" content="1785819189000">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://rpci-lab.github.io/preview.png?v=1785818864000">
+<meta name="twitter:image" content="https://rpci-lab.github.io/preview.png?v=1785819189000">
 <title>RPCI Lab — NSE Daily Screen</title>
 <style>
 :root{
@@ -61,6 +61,9 @@ h1{font-family:var(--mono);font-size:clamp(19px,3.4vw,27px);font-weight:600;lett
   margin:0;text-wrap:balance}
 h1 em{font-style:normal;color:var(--gold)}
 .sub{margin:5px 0 0;color:var(--dim);font-size:13px}
+.disclaimer{margin:9px 0 0;max-width:62ch;font-size:11.5px;line-height:1.5;color:var(--dim);
+  border-left:2px solid var(--gold);padding:5px 0 5px 10px}
+.disclaimer b{color:var(--ink)}
 .stamp{text-align:right;flex-shrink:0}
 .stamp .big{font-family:var(--mono);font-size:20px;font-weight:600}
 button,select,input{font:inherit;color:inherit}
@@ -201,6 +204,9 @@ footer b{color:var(--dim);font-weight:600}
   <div>
     <h1>RPCI <em>Lab</em> — NSE Daily Screen</h1>
     <p class="sub">Every NSE-listed stock scored 0–11 on the RPCI conditions. Scan a column to see what the market is failing.</p>
+    <p class="disclaimer"><b>For learning purposes only — not investment advice.</b>
+      An automated reading of a third-party technical indicator, published for study.
+      Nothing here is a recommendation to buy or sell any security.</p>
   </div>
   <div class="stamp">
     <div class="lbl">Session</div>
@@ -276,8 +282,12 @@ footer b{color:var(--dim);font-weight:600}
   <b>Source.</b> Scores read directly from the “RPCI + Rohan Momentum Indicator” by
   rohan_investor98 on daily candles, one stock at a time. Universe: every equity listed on the NSE.
   <span id="failnote"></span><br>
-  <b>Not investment advice.</b> An automated screen of a third-party indicator, published for study.
-  Verify independently before risking money.
+  <b>Disclaimer.</b> This page is published for learning and study only. It is the automated
+  output of a third-party technical indicator and is <b>not investment advice</b>, not a
+  recommendation to buy or sell any security, and not a research report. The publisher is
+  <b>not registered with SEBI</b> as a research analyst or investment adviser. Scores can be
+  wrong, stale, or based on faulty data. Do your own research and consult a SEBI-registered
+  adviser before making any trading decision. You alone are responsible for your trades.
 </footer>
 </div>
 
