@@ -9,12 +9,12 @@
 <meta property="og:title" content="RPCI Lab — NSE Daily Screen">
 <meta property="og:description" content="2395 NSE-listed stocks scored 0–11 on the RPCI conditions · 91 strongly favourable, 242 at 8+ · updated 2026-08-04">
 <meta property="og:url" content="https://rpci-lab.github.io/">
-<meta property="og:image" content="https://rpci-lab.github.io/preview.png?v=1785839402401">
+<meta property="og:image" content="https://rpci-lab.github.io/preview.png?v=1785864758000">
 <meta property="og:image:width" content="1400">
 <meta property="og:image:height" content="1180">
-<meta name="rpci:stamp" content="1785839402401">
+<meta name="rpci:stamp" content="1785864758000">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="https://rpci-lab.github.io/preview.png?v=1785839402401">
+<meta name="twitter:image" content="https://rpci-lab.github.io/preview.png?v=1785864758000">
 <title>RPCI Lab — NSE Daily Screen</title>
 <style>
 :root{
@@ -172,7 +172,16 @@ td.cx.on{background:var(--gold-soft)}
 
 /* condition legend */
 .legend{display:grid;grid-template-columns:repeat(auto-fill,minmax(238px,1fr));gap:2px 20px}
-.lg{display:flex;gap:9px;align-items:baseline;padding:5px 0;border-bottom:1px solid var(--line)}
+.lg{display:flex;gap:9px;align-items:baseline;padding:5px 6px;border-bottom:1px solid var(--line);
+  width:100%;text-align:left;background:none;border-top:none;border-left:2px solid transparent;
+  border-right:none;cursor:pointer;border-radius:0;transition:background .12s,border-color .12s}
+.lg:hover{background:var(--panel-2);border-left-color:var(--dim)}
+.lg.onp{background:var(--pass-bg);border-left-color:var(--pass)}
+.lg.onf{background:var(--fail-bg);border-left-color:var(--fail)}
+.lg .tag{font-family:var(--mono);font-size:9px;letter-spacing:.08em;padding:1px 4px;border-radius:3px;
+  margin-left:5px;vertical-align:1px}
+.lg .tag.p{background:var(--pass);color:var(--ground)}
+.lg .tag.f{background:var(--fail);color:var(--ground)}
 .lg .code{font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.06em;
   color:var(--gold);width:30px;flex-shrink:0}
 .lg .txt{flex:1;min-width:0}
@@ -246,7 +255,9 @@ footer b{color:var(--dim);font-weight:600}
 </div>
 
 <div class="panel" style="margin-bottom:14px">
-  <h2>The Eleven Conditions <span style="color:var(--dimmer);letter-spacing:0">— what each column means</span></h2>
+  <h2>The Eleven Conditions
+    <span style="color:var(--dimmer);letter-spacing:0">— click any to filter · click again for FAIL</span>
+    <button class="chip" id="condclear" style="float:right;margin-top:-4px" hidden></button></h2>
   <div class="legend" id="legend"></div>
 </div>
 
@@ -356,17 +367,24 @@ document.getElementById('crates').innerHTML=[...rates].sort((a,b)=>b.n-a.n).map(
 }).join('');
 
 /* legend — passing values derived from the scan itself, not assumed */
-document.getElementById('legend').innerHTML=CN.map((c,i)=>{
+function legendHTML(){return CN.map((c,i)=>{
   const passVals=[...new Set(ST.filter(s=>s.bits[i]==='1').map(s=>s.res[i]).filter(Boolean))];
   const n=ST.filter(s=>s.bits[i]==='1').length;
   const pct=Math.round(n/ST.length*100);
   let shown=passVals.slice(0,3).join(', ')||'—';
   if(passVals.length>3)shown+=' +'+(passVals.length-3);
-  return '<div class="lg"><span class="code">'+CS[i]+'</span><span class="txt">'+
-    '<span class="full">'+c+'</span>'+
+  const st=state.conds.get(i);
+  const cls='lg'+(st==='p'?' onp':st==='f'?' onf':'');
+  const hint=st==='p'?'showing only stocks that PASS - click for FAIL'
+           :st==='f'?'showing only stocks that FAIL - click to clear'
+           :'click to keep only stocks passing this condition';
+  return '<button class="'+cls+'" data-cond="'+i+'" title="'+hint+'" aria-pressed="'+(st?'true':'false')+'">'+
+    '<span class="code">'+CS[i]+'</span><span class="txt">'+
+    '<span class="full">'+c+(st==='p'?' <b class="tag p">PASS</b>':st==='f'?' <b class="tag f">FAIL</b>':'')+'</span>'+
     '<span class="pass" title="'+passVals.join(', ').replace(/"/g,'&quot;')+'">passes on <b>'+shown+'</b></span>'+
-    '</span><span class="rt">'+pct+'%</span></div>';
-}).join('');
+    '</span><span class="rt">'+pct+'%</span></button>';
+}).join('');}
+/* legend is painted by render() - it reads state, which is declared further down */
 
 /* sectors */
 const bySec={};
@@ -390,7 +408,8 @@ CN.forEach((c,i)=>{head+='<th class="cx'+(i===0?' matdiv':'')+'" data-c="'+i+'" 
 head+='<th class="matdiv" data-s="close">Close</th><th data-s="chg">Chg%</th><th data-s="sector">Sector</th>';
 document.getElementById('head').innerHTML=head;
 
-let state={q:'',band:'all',sec:null,ex:null,near:false,up:false,conds:new Set(),sort:'score',dir:-1};
+/* conds: Map<conditionIndex, 'p'|'f'> - require that condition to PASS or FAIL */
+let state={q:'',band:'all',sec:null,ex:null,near:false,up:false,conds:new Map(),sort:'score',dir:-1};
 const PAGE=250;          // rows rendered at once - the universe is ~2400 names
 let shown=PAGE;
 
@@ -405,7 +424,11 @@ function view(){
     if(state.ex&&s.ex!==state.ex)return false;
     if(state.near&&s.score!==10)return false;
     if(state.up&&!(s.prev!=null&&s.score>s.prev))return false;
-    for(const i of state.conds)if(s.bits[i]!=='1')return false;
+    for(const [i,want] of state.conds){
+      const pass=s.bits[i]==='1';
+      if(want==='p'&&!pass)return false;
+      if(want==='f'&&pass)return false;
+    }
     if(state.q){const q=state.q.toLowerCase();
       if(!s.sym.toLowerCase().includes(q)&&!s.name.toLowerCase().includes(q))return false;}
     return true;
@@ -438,6 +461,7 @@ function render(reset){
     for(let i=0;i<11;i++){
       const p=s.bits[i]==='1';
       cells+='<td class="cx'+(i===0?' matdiv':'')+(state.conds.has(i)?' on':'')+'">'+
+
         '<i class="'+(p?'p':'f')+'" title="'+CN[i]+': '+(s.res[i]||(p?'PASS':'FAIL'))+'"></i></td>';
     }
     return '<tr><td class="sym"><a href="https://www.tradingview.com/chart/?symbol='+s.ex+'%3A'+
@@ -455,6 +479,11 @@ function render(reset){
   document.querySelectorAll('th.cx').forEach(th=>{
     th.classList.toggle('on',state.conds.has(+th.dataset.c));
   });
+  document.getElementById('legend').innerHTML=legendHTML();
+  const nc=state.conds.size;
+  const cc=document.getElementById('condclear');
+  cc.hidden=nc===0;
+  cc.textContent='CLEAR '+nc+' CONDITION FILTER'+(nc===1?'':'S');
 }
 
 /* interactions */
@@ -485,10 +514,24 @@ document.querySelectorAll('.stile').forEach(t=>t.addEventListener('click',()=>{
 }));
 secSel.addEventListener('change',()=>setSector(secSel.value));
 document.getElementById('more').addEventListener('click',()=>{ shown+=PAGE; render(false); });
+
+/* condition filters: off -> must PASS -> must FAIL -> off */
+function cycleCond(i){
+  const cur=state.conds.get(i);
+  if(cur===undefined)state.conds.set(i,'p');
+  else if(cur==='p')state.conds.set(i,'f');
+  else state.conds.delete(i);
+  render();
+}
+document.getElementById('legend').addEventListener('click',e=>{
+  const b=e.target.closest('[data-cond]');
+  if(b)cycleCond(+b.dataset.cond);
+});
+document.getElementById('condclear').addEventListener('click',()=>{ state.conds.clear(); render(); });
 document.getElementById('head').addEventListener('click',e=>{
   const th=e.target.closest('th');if(!th)return;
   if(th.dataset.c!=null){const i=+th.dataset.c;
-    state.conds.has(i)?state.conds.delete(i):state.conds.add(i);render();return;}
+    cycleCond(i);return;}
   if(th.dataset.s){const k=th.dataset.s;
     state.dir=state.sort===k?-state.dir:(k==='sym'||k==='name'||k==='sector'?1:-1);
     state.sort=k;render();}
